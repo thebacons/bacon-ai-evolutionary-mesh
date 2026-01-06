@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# MCP
+bacon_mqtt_mcp.zip
+files.zip
+
+# Misc
+.DS_Store
+*.swp
+*.bak

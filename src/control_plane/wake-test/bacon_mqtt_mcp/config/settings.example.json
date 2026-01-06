@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/claude-code/main/settings.schema.json",
+  
+  "_comment": "BACON MQTT MCP Configuration for Claude Code",
+  "_instructions": [
+    "Merge this with your existing ~/.claude/settings.json",
+    "Adjust paths if bacon_mqtt_mcp is installed elsewhere",
+    "Set MQTT_BROKER to your broker address"
+  ],
+  
+  "env": {
+    "MCP_TIMEOUT": "3600000",
+    "MCP_TOOL_TIMEOUT": "3600000",
+    "BASH_DEFAULT_TIMEOUT_MS": "1800000",
+    "BASH_MAX_TIMEOUT_MS": "7200000"
+  },
+  
+  "mcpServers": {
+    "bacon-mqtt": {
+      "command": "python",
+      "args": ["-m", "bacon_mqtt_mcp"],
+      "timeout": 3600000,
+      "env": {
+        "MQTT_BROKER": "srv906866.hstgr.cloud",
+        "MQTT_PORT": "1883",
+        "MQTT_USERNAME": "",
+        "MQTT_PASSWORD": ""
+      }
+    }
+  }
+}

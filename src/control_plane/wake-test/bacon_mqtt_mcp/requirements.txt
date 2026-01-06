@@ -1,0 +1,10 @@
+# BACON MQTT MCP Server Dependencies
+
+# MCP SDK for FastMCP
+mcp>=1.0.0
+
+# MQTT client with async support
+aiomqtt>=2.0.0
+
+# Type hints (usually included, but explicit is good)
+typing-extensions>=4.0.0
