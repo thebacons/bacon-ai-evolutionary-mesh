@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
+import { forceX, forceY } from 'd3';
 import {
   Activity, Cpu, Layers, Maximize, Play, Send, Smartphone, Zap,
   Server, Settings, X, ChevronRight, ChevronDown,
@@ -245,12 +246,12 @@ const App: React.FC = () => {
     const mainServerId = 'srv906866.hstgr.cloud';
 
     // Custom force: X-alignment pulling toward center (0,0) or center of mesh
-    graphComponentRef.current.d3Force('x', (window as any).d3.forceX(0).strength((node: any) => {
+    graphComponentRef.current.d3Force('x', forceX(0).strength((node: any) => {
       // Pull machines slightly more than agents to keep the spine stable
       return node.type === 'hardware' ? 0.05 : 0.02;
     }));
 
-    graphComponentRef.current.d3Force('y', (window as any).d3.forceY(0).strength((node: any) => {
+    graphComponentRef.current.d3Force('y', forceY(0).strength((node: any) => {
       return node.type === 'hardware' ? 0.05 : 0.02;
     }));
 
