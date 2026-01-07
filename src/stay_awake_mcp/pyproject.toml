@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bacon-stay-awake-mcp"
+version = "1.0.0"
+description = "BACON-AI Stay Awake MCP Server - Keeps agents alive with progress notifications"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+    "aiomqtt>=2.0.0",
+]
+
+[project.scripts]
+bacon-stay-awake = "server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]

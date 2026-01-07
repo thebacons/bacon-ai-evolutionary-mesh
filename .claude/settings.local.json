@@ -15,7 +15,14 @@
       "mcp__gemini-chat__gemini_25_pro_chat",
       "Bash(curl:*)",
       "Bash(mkdir:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "WebFetch(domain:www.shiftr.io)",
+      "Bash(ping:*)",
+      "Bash(nc:*)",
+      "Bash(mosquitto_pub:*)",
+      "WebFetch(domain:eclipse.dev)",
+      "Bash(scp:*)",
+      "Bash(ssh:*)"
     ]
   }
 }

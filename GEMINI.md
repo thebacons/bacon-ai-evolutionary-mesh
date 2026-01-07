@@ -20,6 +20,7 @@ This is the BACON-AI MQTT Mesh project - a distributed multi-agent collaboration
 - **Production Dashboard**: http://srv906866.hstgr.cloud:8000/
 - **Integration**: http://srv906866.hstgr.cloud:8005/
 - **Feature Testing**: http://srv906866.hstgr.cloud:8006/
+- **Benchmarking (shiftr)**: https://bacon-ai.cloud.shiftr.io/
 
 ## Available Workflows
 
@@ -44,3 +45,5 @@ This is the BACON-AI MQTT Mesh project - a distributed multi-agent collaboration
 ## Related Projects
 
 - `mqtt-collaboration-project` - Initial MQTT tests and wake-up lessons learned
+- `documentation/benchmarking/SHIFTR_IO_BENCHMARK.md` - UI patterns and flow observations
+- `documentation/architecture/NEXT_PHASE_UI_DESIGN_PROPOSAL.md` - Neural mesh aesthetic proposal
