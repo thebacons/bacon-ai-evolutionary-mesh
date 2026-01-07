@@ -210,10 +210,10 @@ const App: React.FC = () => {
   // Custom settings store (repulsion, linkDistance, linkStrength, nameOverride)
   const [nodeSettings, setNodeSettings] = useState<Record<string, any>>({});
   const [typeConfigs, setTypeConfigs] = useState<Record<string, any>>({
-    hub: { shape: 'circle', color: '#ff00ff', label: 'Hostinger Hub' },
-    infrastructure: { shape: 'circle', color: '#00d2ff', label: 'Local Infra' },
-    mainAgent: { shape: 'triangle', color: '#d97757', label: 'Main LLM Agent' },
-    subAgent: { shape: 'square', color: '#00ff88', label: 'Sub-Agent' },
+    hub: { shape: 'circle', color: '#ff00ff', label: 'Hostinger Hub', baseSize: 7 },
+    infrastructure: { shape: 'circle', color: '#00d2ff', label: 'Local Infra', baseSize: 7 },
+    mainAgent: { shape: 'triangle', color: '#d97757', label: 'Main LLM Agent', baseSize: 5 },
+    subAgent: { shape: 'square', color: '#00ff88', label: 'Sub-Agent', baseSize: 4 },
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [customizingType, setCustomizingType] = useState<string | null>(null);
@@ -319,6 +319,7 @@ const App: React.FC = () => {
         const s = nodeSettings[link.source.id]?.linkDistance;
         const t = nodeSettings[link.target.id]?.linkDistance;
         if (s !== undefined || t !== undefined) {
+          // Balance the distance between start and end
           return (s || 60) + (t || 60);
         }
 
@@ -342,12 +343,7 @@ const App: React.FC = () => {
       });
 
     // Gravitational Attraction to Main Server (srv906866)
-    // This stops other servers from floating off screen by pulling everything toward the primary hub.
-    const mainServerId = 'srv906866.hstgr.cloud';
-
-    // Custom force: X-alignment pulling toward center (0,0) or center of mesh
     graphComponentRef.current.d3Force('x', forceX(0).strength((node: any) => {
-      // Pull machines slightly more than agents to keep the spine stable
       return node.type === 'hardware' ? 0.05 : 0.02;
     }));
 
@@ -355,8 +351,11 @@ const App: React.FC = () => {
       return node.type === 'hardware' ? 0.05 : 0.02;
     }));
 
-    // Reheat engine to apply changes
-    graphComponentRef.current.d3ReheatSimulation();
+    // Soft reheat for smoother transition instead of hectic jumping
+    graphComponentRef.current.d3AlphaTarget(0.3);
+    setTimeout(() => {
+      if (graphComponentRef.current) graphComponentRef.current.d3AlphaTarget(0);
+    }, 500);
   }, [nodeSettings]);
 
   // Persistent state for graph to prevent jumping
@@ -664,10 +663,14 @@ const App: React.FC = () => {
                 if (node.type === 'hardware' && !showInfrastructure) return;
 
                 // Get Visual Config for Group
-                const config = typeConfigs[node.group] || { shape: 'circle', color: '#00ff88' };
+                const config = typeConfigs[node.group] || { shape: 'circle', color: '#00ff88', baseSize: 4 };
                 const color = config.color;
                 const shape = config.shape;
-                const size = (node.type === 'hardware' ? 7 : 4);
+
+                // Effective size: base size * node setting multiplier (default 1)
+                const sizeMult = nodeSettings[node.id]?.sizeMultiplier || 1;
+                const typeSizeMult = config.sizeMultiplier || 1;
+                const size = (config.baseSize || 4) * sizeMult * typeSizeMult;
 
                 ctx.save();
                 ctx.translate(node.x, node.y);
@@ -787,26 +790,51 @@ const App: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div>
                     <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '8px', textTransform: 'uppercase' }}>Shape</div>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       {['circle', 'triangle', 'square', 'hexagon', 'diamond'].map(s => (
                         <button
                           key={s}
                           onClick={() => setTypeConfigs(prev => ({ ...prev, [customizingType]: { ...prev[customizingType], shape: s } }))}
                           style={{
                             flex: 1,
-                            padding: '8px',
+                            padding: '10px 5px',
                             background: typeConfigs[customizingType].shape === s ? 'rgba(255,0,255,0.2)' : 'rgba(255,255,255,0.05)',
                             border: `1px solid ${typeConfigs[customizingType].shape === s ? '#ff00ff' : 'rgba(255,255,255,0.1)'}`,
-                            borderRadius: '6px',
+                            borderRadius: '8px',
                             cursor: 'pointer',
-                            color: '#fff',
-                            fontSize: '0.8rem'
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center'
                           }}
                         >
-                          {s.charAt(0).toUpperCase()}
+                          <div style={{
+                            width: '12px',
+                            height: '12px',
+                            background: typeConfigs[customizingType].color,
+                            borderRadius: s === 'circle' ? '50%' : (s === 'square' ? '2px' : '0'),
+                            clipPath: s === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' :
+                              s === 'diamond' ? 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' :
+                                s === 'hexagon' ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' : 'none'
+                          }} />
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.6, marginBottom: '8px', textTransform: 'uppercase' }}>
+                      <span>Shape Size</span>
+                      <span>{typeConfigs[customizingType].sizeMultiplier || 1}x</span>
+                    </div>
+                    <input
+                      type="range" min="0.5" max="3" step="0.1"
+                      value={typeConfigs[customizingType].sizeMultiplier || 1}
+                      onChange={(e) => setTypeConfigs(prev => ({
+                        ...prev,
+                        [customizingType]: { ...prev[customizingType], sizeMultiplier: parseFloat(e.target.value) }
+                      }))}
+                      style={{ width: '100%', accentColor: '#ff00ff' }}
+                    />
                   </div>
 
                   <div>
@@ -973,6 +1001,22 @@ const App: React.FC = () => {
                     [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], linkStrength: parseFloat(e.target.value) }
                   }))}
                   style={{ width: '100%', accentColor: '#ff00ff' }}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.6, marginBottom: '5px' }}>
+                  <span>Node Size</span>
+                  <span>{nodeSettings[contextMenu.nodeId]?.sizeMultiplier || 1}x</span>
+                </div>
+                <input
+                  type="range" min="0.5" max="5" step="0.1"
+                  value={nodeSettings[contextMenu.nodeId]?.sizeMultiplier || 1}
+                  onChange={(e) => setNodeSettings(prev => ({
+                    ...prev,
+                    [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], sizeMultiplier: parseFloat(e.target.value) }
+                  }))}
+                  style={{ width: '100%', accentColor: '#fbbc05' }}
                 />
               </div>
             </div>
