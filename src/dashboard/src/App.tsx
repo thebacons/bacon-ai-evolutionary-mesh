@@ -318,43 +318,48 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!graphComponentRef.current) return;
 
-    // Repulsion (Charge) - Increased baseline repulsion to prevent overlapping
+    // Repulsion (Charge) - Use base -150 consistent with UI fallback
     graphComponentRef.current.d3Force('charge').strength((node: any) => {
       const custom = nodeSettings[node.id]?.repulsion;
-      // Increased base from -30 to -150 for better separation
-      return custom !== undefined ? -custom : -150;
+      // UI fallback is 150, so use -150 if not set. Slider 0-500.
+      return -(custom !== undefined ? custom : 150);
     });
 
     // Link Forces - Proportional distances to clearly separate clusters
     graphComponentRef.current.d3Force('link')
       .distance((link: any) => {
-        const s = nodeSettings[link.source.id]?.linkDistance;
-        const t = nodeSettings[link.target.id]?.linkDistance;
+        const sId = typeof link.source === 'object' ? link.source.id : link.source;
+        const tId = typeof link.target === 'object' ? link.target.id : link.target;
+
+        const s = nodeSettings[sId]?.linkDistance;
+        const t = nodeSettings[tId]?.linkDistance;
+
         if (s !== undefined || t !== undefined) {
-          // Balance the distance between start and end
+          // If both have custom distances, average them or sum? 
+          // Summing (s+t) is better for "node radius" feel. 
+          // Baseline in UI is 60.
           return (s || 60) + (t || 60);
         }
 
-        // Shorten distance for agents to their host machine to form tight clusters
+        // Default logic
         if (link.type === 'hardware') return 40;
         if (link.type === 'dependency') return 50;
-
-        // Keep backbone nodes (srv to pc) at a comfortable distance
         if (link.type === 'bridge') return 120;
-
         return 60;
       })
       .strength((link: any) => {
-        const s = nodeSettings[link.source.id]?.linkStrength;
-        const t = nodeSettings[link.target.id]?.linkStrength;
+        const sId = typeof link.source === 'object' ? link.source.id : link.source;
+        const tId = typeof link.target === 'object' ? link.target.id : link.target;
+
+        const s = nodeSettings[sId]?.linkStrength;
+        const t = nodeSettings[tId]?.linkStrength;
         if (s !== undefined || t !== undefined) {
           return (s || 1) * (t || 1);
         }
-        // Stronger links for clustering, weaker for the long-distance bridge
         return link.type === 'bridge' ? 0.3 : 1;
       });
 
-    // Gravitational Attraction to Main Server (srv906866)
+    // Gravitational Attraction
     graphComponentRef.current.d3Force('x', forceX(0).strength((node: any) => {
       return node.type === 'hardware' ? 0.05 : 0.02;
     }));
@@ -363,22 +368,21 @@ const App: React.FC = () => {
       return node.type === 'hardware' ? 0.05 : 0.02;
     }));
 
-    // Soft reheat for smoother transition instead of hectic jumping
+    // Wake up the simulation
     const fg = graphComponentRef.current;
     if (fg) {
-      if (typeof fg.d3AlphaTarget === 'function') {
+      if (typeof fg.d3Simulation === 'function') {
+        const sim = fg.d3Simulation();
+        if (sim) {
+          sim.alpha(0.3).restart();
+        }
+      } else if (typeof fg.d3AlphaTarget === 'function') {
         fg.d3AlphaTarget(0.3);
         setTimeout(() => {
           if (graphComponentRef.current && typeof graphComponentRef.current.d3AlphaTarget === 'function') {
             graphComponentRef.current.d3AlphaTarget(0);
           }
         }, 500);
-      } else if (typeof fg.d3Simulation === 'function') {
-        const sim = fg.d3Simulation();
-        if (sim && sim.alphaTarget) {
-          sim.alphaTarget(0.3).restart();
-          setTimeout(() => sim.alphaTarget(0), 500);
-        }
       }
     }
   }, [nodeSettings]);
@@ -984,11 +988,11 @@ const App: React.FC = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.6, marginBottom: '5px' }}>
                   <span>Repulsion (Gravity)</span>
-                  <span>{nodeSettings[contextMenu.nodeId]?.repulsion || 30}</span>
+                  <span>{nodeSettings[contextMenu.nodeId]?.repulsion || 150}</span>
                 </div>
                 <input
                   type="range" min="0" max="500" step="10"
-                  value={nodeSettings[contextMenu.nodeId]?.repulsion || 30}
+                  value={nodeSettings[contextMenu.nodeId]?.repulsion || 150}
                   onChange={(e) => setNodeSettings(prev => ({
                     ...prev,
                     [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], repulsion: parseInt(e.target.value) }
@@ -1000,11 +1004,11 @@ const App: React.FC = () => {
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.6, marginBottom: '5px' }}>
                   <span>Link Distance</span>
-                  <span>{nodeSettings[contextMenu.nodeId]?.linkDistance || 30}px</span>
+                  <span>{nodeSettings[contextMenu.nodeId]?.linkDistance || 60}px</span>
                 </div>
                 <input
-                  type="range" min="10" max="200" step="5"
-                  value={nodeSettings[contextMenu.nodeId]?.linkDistance || 30}
+                  type="range" min="10" max="300" step="5"
+                  value={nodeSettings[contextMenu.nodeId]?.linkDistance || 60}
                   onChange={(e) => setNodeSettings(prev => ({
                     ...prev,
                     [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], linkDistance: parseInt(e.target.value) }
