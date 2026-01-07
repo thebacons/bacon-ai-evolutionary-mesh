@@ -126,6 +126,47 @@ const App: React.FC = () => {
 
   // Custom settings store (repulsion, linkDistance, linkStrength, nameOverride)
   const [nodeSettings, setNodeSettings] = useState<Record<string, any>>({});
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/mesh_v1');
+        const data = await response.json();
+        if (data.value && data.value !== "{}") {
+          setNodeSettings(JSON.parse(data.value));
+        }
+        setSettingsLoaded(true);
+      } catch (e) {
+        console.error("Failed to load settings:", e);
+        setSettingsLoaded(true);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  // Persist settings when they change (debounced)
+  useEffect(() => {
+    if (!settingsLoaded) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: 'mesh_v1',
+            value: JSON.stringify(nodeSettings)
+          })
+        });
+      } catch (e) {
+        console.error("Failed to save settings:", e);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [nodeSettings, settingsLoaded]);
 
   // Poll for agent updates
   useEffect(() => {

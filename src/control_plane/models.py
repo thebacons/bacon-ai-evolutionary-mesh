@@ -27,3 +27,6 @@ class Message(SQLModel, table=True):
     payload: str  # JSON string
     state: str  # delivered, pending, error
 
+class VisualizationSetting(SQLModel, table=True):
+    key: str = Field(primary_key=True)
+    value: str # JSON blob

@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse
 from sqlmodel import Session, select
 
 from database import init_db, get_session
-from models import Agent, Message, Node
+from models import Agent, Message, Node, VisualizationSetting
 from mqtt_handler import MQTTHandler
 from memory_gateway import MemoryGateway
 
@@ -186,6 +186,28 @@ def get_agent_memory(agent_id: str, query: str = "*"):
     if query == "*":
         return memory.get_all(agent_id=agent_id)
     return memory.recall(query, agent_id=agent_id)
+
+@app.get("/api/settings/{key}")
+def get_setting(key: str):
+    """Retrieve visual settings by key."""
+    with get_session() as session:
+        setting = session.get(VisualizationSetting, key)
+        if not setting:
+            return {"key": key, "value": "{}"}
+        return setting
+
+@app.post("/api/settings")
+def save_setting(setting: VisualizationSetting):
+    """Persist visual settings."""
+    with get_session() as session:
+        existing = session.get(VisualizationSetting, setting.key)
+        if existing:
+            existing.value = setting.value
+            session.add(existing)
+        else:
+            session.add(setting)
+        session.commit()
+        return {"status": "saved"}
 
 # Dashboard Static Path Configuration
 dashboard_path = Path(__file__).resolve().parent / "static"
