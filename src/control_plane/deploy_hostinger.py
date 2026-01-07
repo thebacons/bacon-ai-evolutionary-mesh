@@ -47,7 +47,8 @@ def deploy(env_name: str, from_env: str = None, rollback: bool = False):
     config = ENV_CONFIG[env_name]
     target_dir = config["dir"]
     port = config["port"]
-    service_name = f"bacon-env@{port}.service"
+    service_name = f"bacon-{env_name}.service"
+
     
     print(f"🚀 Deploying BACON-AI to {env_name} (port {port})...")
     
@@ -97,9 +98,32 @@ def deploy(env_name: str, from_env: str = None, rollback: bool = False):
     run_remote(f"cd {target_dir} && python3 -m venv venv")
     run_remote(f"cd {target_dir} && ./venv/bin/pip install -r requirements.txt")
     
-    # 6. Upload template service (if not exists)
-    template_service = LOCAL_SRC_DIR / "bacon-env@.service"
-    run_local(f"scp -o StrictHostKeyChecking=no {template_service} {REMOTE_USER}@{REMOTE_HOST}:/etc/systemd/system/")
+    # 6. Create and upload environment-specific service file
+    service_content = f"""[Unit]
+Description=BACON-AI Control Plane ({env_name})
+After=network.target mosquitto.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory={target_dir}
+ExecStart={target_dir}/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port {port}
+Restart=always
+RestartSec=5
+Environment="BACON_ENV={env_name}"
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
+"""
+    service_name = f"bacon-{env_name}.service"
+    
+    # Write service file locally and upload
+    local_service_path = LOCAL_SRC_DIR / f"bacon-{env_name}.service"
+    with open(local_service_path, 'w') as f:
+        f.write(service_content)
+    
+    run_local(f"scp -o StrictHostKeyChecking=no {local_service_path} {REMOTE_USER}@{REMOTE_HOST}:/etc/systemd/system/{service_name}")
     run_remote("systemctl daemon-reload")
     
     # 7. Enable and start service
@@ -110,6 +134,7 @@ def deploy(env_name: str, from_env: str = None, rollback: bool = False):
     
     print(f"\n✅ Deployment successful!")
     print(f"🔗 {env_name.upper()}: http://{REMOTE_HOST}:{port}/")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Deploy BACON-AI to multi-environment Hostinger")
