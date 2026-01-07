@@ -318,11 +318,10 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!graphComponentRef.current) return;
 
-    // Repulsion (Charge) - renamed to "Push" for intuition
+    // Repulsion (Charge) - restored to original working value
     graphComponentRef.current.d3Force('charge').strength((node: any) => {
       const custom = nodeSettings[node.id]?.repulsion;
-      // Default -150. Slider pushes up to -600.
-      return -(custom !== undefined ? custom : 150);
+      return custom !== undefined ? -custom : -30;
     });
 
     // Link Forces - Proportional distances to clearly separate clusters
@@ -335,14 +334,13 @@ const App: React.FC = () => {
         const t = nodeSettings[tId]?.linkDistance;
 
         if (s !== undefined || t !== undefined) {
-          // Use max for "the bigger one wins" predictability
-          return Math.max(s || 60, t || 60);
+          return (s || 30) + (t || 30);
         }
 
-        if (link.type === 'hardware') return 40;
-        if (link.type === 'dependency') return 50;
-        if (link.type === 'bridge') return 180;
-        return 60;
+        if (link.type === 'hardware') return 30;
+        if (link.type === 'dependency') return 40;
+        if (link.type === 'bridge') return 100;
+        return 30;
       })
       .strength((link: any) => {
         const sId = typeof link.source === 'object' ? link.source.id : link.source;
