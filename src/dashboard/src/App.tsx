@@ -29,52 +29,99 @@ interface MessageHistory {
 const BACON_API = '/api/agents';
 
 // Helper Component for Legend
-const LegendItem = ({ color, label, isLink }: { color: string, label: string, isLink?: boolean }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.75rem' }}>
+const LegendItem = ({ color, label, shape, isLink, onClick }: {
+  color: string,
+  label: string,
+  shape?: string,
+  isLink?: boolean,
+  onClick?: () => void
+}) => (
+  <div
+    onClick={onClick}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      fontSize: '0.75rem',
+      cursor: onClick ? 'pointer' : 'default',
+      transition: 'opacity 0.2s',
+      background: 'rgba(255,255,255,0.03)',
+      padding: '6px 10px',
+      borderRadius: '6px'
+    }}
+  >
     <div style={{
-      width: isLink ? '20px' : '10px',
-      height: isLink ? '2px' : '10px',
+      width: isLink ? '20px' : '12px',
+      height: isLink ? '2px' : '12px',
       background: color,
-      borderRadius: isLink ? '0' : '50%',
+      borderRadius: shape === 'circle' ? '50%' : (shape === 'square' ? '2px' : '0'),
+      clipPath: shape === 'triangle' ? 'polygon(50% 0%, 0% 100%, 100% 100%)' :
+        shape === 'diamond' ? 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' :
+          shape === 'hexagon' ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)' : 'none',
       boxShadow: `0 0 8px ${color}`
     }} />
-    <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600, letterSpacing: '0.5px' }}>{label}</span>
+    <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, flex: 1 }}>{label}</span>
+    {onClick && <Settings size={12} color="rgba(255,255,255,0.4)" />}
   </div>
 );
 
 // Network Legend Panel
-const Legend = () => (
+const Legend: React.FC<{ typeConfigs: any, setCustomizingType: (t: string | null) => void }> = ({ typeConfigs, setCustomizingType }) => (
   <div className="glass-panel" style={{
     position: 'absolute',
     top: '20px',
     left: '20px',
     padding: '20px',
-    background: 'rgba(0,0,0,0.6)',
-    backdropFilter: 'blur(10px)',
+    background: 'rgba(5,5,10,0.85)',
+    backdropFilter: 'blur(15px)',
     border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '12px',
-    pointerEvents: 'none',
+    borderRadius: '16px',
     zIndex: 10,
-    width: '240px'
+    width: '260px',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
   }}>
     <div style={{
       display: 'flex',
       alignItems: 'center',
       gap: '8px',
       fontSize: '0.7rem',
-      color: '#00d2ff',
+      color: '#ff00ff',
       fontWeight: 'bold',
       letterSpacing: '2px',
-      marginBottom: '15px'
+      marginBottom: '15px',
+      textTransform: 'uppercase'
     }}>
-      <Network size={14} /> NETWORK LEGEND
+      <Network size={14} /> Mesh Identities
     </div>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <LegendItem color="#ff00ff" label="Hostinger Hub / Antigravity" />
-      <LegendItem color="#00d2ff" label="Infrastructure Node" />
-      <LegendItem color="#d97757" label="Claude AI Agent" />
-      <LegendItem color="#00ff88" label="Standard Agent" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <LegendItem
+        color={typeConfigs.hub.color}
+        label={typeConfigs.hub.label}
+        shape={typeConfigs.hub.shape}
+        onClick={() => setCustomizingType('hub')}
+      />
+      <LegendItem
+        color={typeConfigs.infrastructure.color}
+        label={typeConfigs.infrastructure.label}
+        shape={typeConfigs.infrastructure.shape}
+        onClick={() => setCustomizingType('infrastructure')}
+      />
+      <LegendItem
+        color={typeConfigs.mainAgent.color}
+        label={typeConfigs.mainAgent.label}
+        shape={typeConfigs.mainAgent.shape}
+        onClick={() => setCustomizingType('mainAgent')}
+      />
+      <LegendItem
+        color={typeConfigs.subAgent.color}
+        label={typeConfigs.subAgent.label}
+        shape={typeConfigs.subAgent.shape}
+        onClick={() => setCustomizingType('subAgent')}
+      />
       <LegendItem color="#00ffff" label="Evolutionary Signal" isLink />
+    </div>
+    <div style={{ marginTop: '15px', fontSize: '0.65rem', opacity: 0.5, fontStyle: 'italic', textAlign: 'center' }}>
+      Click an item to customize visual style
     </div>
   </div>
 );
@@ -162,7 +209,14 @@ const App: React.FC = () => {
 
   // Custom settings store (repulsion, linkDistance, linkStrength, nameOverride)
   const [nodeSettings, setNodeSettings] = useState<Record<string, any>>({});
+  const [typeConfigs, setTypeConfigs] = useState<Record<string, any>>({
+    hub: { shape: 'circle', color: '#ff00ff', label: 'Hostinger Hub' },
+    infrastructure: { shape: 'circle', color: '#00d2ff', label: 'Local Infra' },
+    mainAgent: { shape: 'triangle', color: '#d97757', label: 'Main LLM Agent' },
+    subAgent: { shape: 'square', color: '#00ff88', label: 'Sub-Agent' },
+  });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [customizingType, setCustomizingType] = useState<string | null>(null);
 
   // Load settings on mount
   useEffect(() => {
@@ -171,7 +225,9 @@ const App: React.FC = () => {
         const response = await fetch('/api/settings/mesh_v1');
         const data = await response.json();
         if (data.value && data.value !== "{}") {
-          setNodeSettings(JSON.parse(data.value));
+          const parsed = JSON.parse(data.value);
+          if (parsed.nodeSettings) setNodeSettings(parsed.nodeSettings);
+          if (parsed.typeConfigs) setTypeConfigs(prev => ({ ...prev, ...parsed.typeConfigs }));
         }
         setSettingsLoaded(true);
       } catch (e) {
@@ -185,24 +241,23 @@ const App: React.FC = () => {
   // Persist settings when they change (debounced)
   useEffect(() => {
     if (!settingsLoaded) return;
-
-    const timer = setTimeout(async () => {
+    const saveSettings = async () => {
       try {
         await fetch('/api/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             key: 'mesh_v1',
-            value: JSON.stringify(nodeSettings)
+            value: JSON.stringify({ nodeSettings, typeConfigs })
           })
         });
       } catch (e) {
         console.error("Failed to save settings:", e);
       }
-    }, 2000);
-
+    };
+    const timer = setTimeout(saveSettings, 1000);
     return () => clearTimeout(timer);
-  }, [nodeSettings, settingsLoaded]);
+  }, [nodeSettings, typeConfigs, settingsLoaded]);
 
   // Poll for agent updates
   useEffect(() => {
@@ -321,16 +376,17 @@ const App: React.FC = () => {
       // 1. Process Real Agents (Highest Priority)
       agents.forEach(agent => {
         const existing = existingNodeMap.get(agent.id);
+        const isMain = agent.operator?.includes('Claude') || agent.operator?.includes('Antigravity') || !agent.parent_id;
+
         nodes.set(agent.id, {
-          ...(existing || { x: Math.random() * 200, y: Math.random() * 200 }),
+          ...(existing || { x: (Math.random() - 0.5) * 400, y: (Math.random() - 0.5) * 400 }),
           id: agent.id,
           name: nodeSettings[agent.id]?.name || agent.operator || agent.id,
           type: 'agent',
+          group: isMain ? 'mainAgent' : 'subAgent',
           operator: agent.operator,
           status: agent.status,
-          val: 10,
-          color: agent.operator?.includes('Claude') ? '#d97757' :
-            agent.operator?.includes('Antigravity') ? '#ff00ff' : '#4285f4'
+          val: isMain ? 10 : 6
         });
       });
 
@@ -339,13 +395,14 @@ const App: React.FC = () => {
         // Hardware Node (if not already an agent)
         if (!nodes.has(agent.node_id)) {
           const existing = existingNodeMap.get(agent.node_id);
+          const isHub = agent.node_id.includes('srv906866');
           nodes.set(agent.node_id, {
-            ...(existing || { x: Math.random() * 200, y: Math.random() * 200 }),
+            ...(existing || { x: (Math.random() - 0.5) * 400, y: (Math.random() - 0.5) * 400 }),
             id: agent.node_id,
             name: nodeSettings[agent.node_id]?.name || agent.node_id,
             type: 'hardware',
-            val: 25, // Larger for machines
-            color: '#00d2ff'
+            group: isHub ? 'hub' : 'infrastructure',
+            val: 20
           });
         }
 
@@ -603,52 +660,56 @@ const App: React.FC = () => {
               }}
               linkWidth={(link: any) => link.type === 'hardware' ? 2 : 1}
               nodeCanvasObject={(node: any, ctx, globalScale) => {
-                const label = node.name || node.id;
-                const curScale = globalScale || 1;
-
                 // If it's a hardware node and we're hiding infrastructure, don't draw it
                 if (node.type === 'hardware' && !showInfrastructure) return;
 
-                // Optimized font size for legibility
-                const fontSize = 14 / curScale;
+                // Get Visual Config for Group
+                const config = typeConfigs[node.group] || { shape: 'circle', color: '#00ff88' };
+                const color = config.color;
+                const shape = config.shape;
                 const size = (node.type === 'hardware' ? 7 : 4);
 
                 ctx.save();
                 ctx.translate(node.x, node.y);
+                ctx.beginPath();
 
-                // Determine shape based on role
-                // Hardware = Hexagon, Claude/Premium AI = Diamond, Agents = Circle
-                if (node.type === 'hardware') {
+                if (shape === 'hexagon') {
                   const sides = 6;
-                  ctx.beginPath();
                   ctx.moveTo(size * Math.cos(0), size * Math.sin(0));
                   for (let i = 1; i <= sides; i++) {
                     ctx.lineTo(size * Math.cos(i * 2 * Math.PI / sides), size * Math.sin(i * 2 * Math.PI / sides));
                   }
-                  ctx.closePath();
-                  ctx.fillStyle = node.id.includes('srv906866') ? '#ff00ff' : '#00d2ff';
-                  ctx.shadowBlur = 15;
-                  ctx.shadowColor = ctx.fillStyle;
-                } else if (node.operator?.includes('Claude') || node.id === 'antigravity') {
-                  // Diamond shape for high-level AI
-                  ctx.beginPath();
-                  ctx.moveTo(0, -size * 1.2);
-                  ctx.lineTo(size * 1.2, 0);
-                  ctx.lineTo(0, size * 1.2);
-                  ctx.lineTo(-size * 1.2, 0);
-                  ctx.closePath();
-                  ctx.fillStyle = node.id === 'antigravity' ? '#ff00ff' : '#d97757';
-                  ctx.shadowBlur = 10;
-                  ctx.shadowColor = ctx.fillStyle;
+                } else if (shape === 'diamond') {
+                  ctx.moveTo(0, -size * 1.3);
+                  ctx.lineTo(size * 1.3, 0);
+                  ctx.lineTo(0, size * 1.3);
+                  ctx.lineTo(-size * 1.3, 0);
+                } else if (shape === 'triangle') {
+                  ctx.moveTo(0, -size * 1.3);
+                  ctx.lineTo(size * 1.25, size * 0.8);
+                  ctx.lineTo(-size * 1.25, size * 0.8);
+                } else if (shape === 'square') {
+                  ctx.rect(-size, -size, size * 2, size * 2);
                 } else {
-                  // Circle for standard agents
-                  ctx.beginPath();
+                  // Circle
                   ctx.arc(0, 0, size, 0, 2 * Math.PI, false);
-                  ctx.fillStyle = '#00ff88';
+                }
+
+                ctx.closePath();
+                ctx.fillStyle = color;
+
+                if (node.type === 'hardware' || node.group === 'mainAgent') {
+                  ctx.shadowBlur = 15;
+                  ctx.shadowColor = color;
                 }
 
                 ctx.fill();
                 ctx.restore();
+
+                // Draw Text
+                const label = node.name || node.id;
+                const curScale = globalScale || 1;
+                const fontSize = 14 / curScale;
 
                 // Draw Text
                 if (curScale > 0.6) {
@@ -700,7 +761,94 @@ const App: React.FC = () => {
               <Maximize size={16} /> ZOOM TO FIT
             </button>
 
-            <Legend />
+            <Legend typeConfigs={typeConfigs} setCustomizingType={setCustomizingType} />
+
+            {/* Config Popup */}
+            {customizingType && (
+              <div className="glass-panel" style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                padding: '25px',
+                background: 'rgba(5,5,10,0.95)',
+                backdropFilter: 'blur(30px)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '20px',
+                zIndex: 100,
+                width: '320px',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1rem', color: '#ff00ff' }}>Customize {typeConfigs[customizingType].label}</h3>
+                  <button onClick={() => setCustomizingType(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>×</button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '8px', textTransform: 'uppercase' }}>Shape</div>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      {['circle', 'triangle', 'square', 'hexagon', 'diamond'].map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setTypeConfigs(prev => ({ ...prev, [customizingType]: { ...prev[customizingType], shape: s } }))}
+                          style={{
+                            flex: 1,
+                            padding: '8px',
+                            background: typeConfigs[customizingType].shape === s ? 'rgba(255,0,255,0.2)' : 'rgba(255,255,255,0.05)',
+                            border: `1px solid ${typeConfigs[customizingType].shape === s ? '#ff00ff' : 'rgba(255,255,255,0.1)'}`,
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            color: '#fff',
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          {s.charAt(0).toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.6, marginBottom: '8px', textTransform: 'uppercase' }}>Color</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+                      {['#ff00ff', '#00d2ff', '#d97757', '#00ff88', '#4285f4', '#fbbc05', '#ea4335', '#ffffff', '#7b1fa2', '#2e7d32'].map(c => (
+                        <div
+                          key={c}
+                          onClick={() => setTypeConfigs(prev => ({ ...prev, [customizingType]: { ...prev[customizingType], color: c } }))}
+                          style={{
+                            width: '100%',
+                            paddingTop: '100%',
+                            background: c,
+                            borderRadius: '50%',
+                            cursor: 'pointer',
+                            border: `2px solid ${typeConfigs[customizingType].color === c ? '#fff' : 'transparent'}`,
+                            boxShadow: `0 0 10px ${c}44`
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setCustomizingType(null)}
+                  style={{
+                    width: '100%',
+                    marginTop: '25px',
+                    padding: '12px',
+                    background: '#ff00ff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  SAVE CHANGES
+                </button>
+              </div>
+            )}
 
             {/* Network Stats - Bottom Left */}
             <div className="glass-panel" style={{
