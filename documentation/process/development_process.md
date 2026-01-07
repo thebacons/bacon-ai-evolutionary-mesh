@@ -4,6 +4,39 @@
 
 This document outlines the development process for BACON-AI Evolutionary Mesh using the multi-environment DevOps workflow.
 
+## 4-Tier Development Environment Model
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ TIER 1: DEVELOPMENT (This PC)                                           │
+│ ├── Local IDE (Antigravity/VS Code)                                     │
+│ ├── Local testing with mock data                                        │
+│ └── Git version control                                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│ TIER 2: TEST/STAGING (Hostinger - Ports 8006-8009)                       │
+│ ├── 8006: FUT (Feature Under Test) - feature-physics                    │
+│ ├── 8007: FUT-2 (Feature Under Test) - feature-gui                      │
+│ ├── 8008: SIT-1 (System Integration Test) - no auth, dummy data         │
+│ └── 8009: SIT-2 (System Integration Test) - with auth, real data        │
+├─────────────────────────────────────────────────────────────────────────┤
+│ TIER 3: INTEGRATION/REGRESSION (Hostinger - Port 8005)                   │
+│ ├── Merged features testing                                              │
+│ ├── Regression testing                                                   │
+│ ├── Performance testing                                                  │
+│ └── "Dress rehearsal" before production                                  │
+├─────────────────────────────────────────────────────────────────────────┤
+│ TIER 4: PRODUCTION (Hostinger - Port 8000)                               │
+│ └── Live system with real users                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+| Tier | Environment | Location | Port | Purpose |
+|------|-------------|----------|------|---------|
+| 1 | Development | Local PC | N/A | IDE, coding, unit tests |
+| 2 | FUT/SIT | Hostinger | 8006-8009 | Feature & integration testing |
+| 3 | Regression | Hostinger | 8005 | Dress rehearsal, performance |
+| 4 | Production | Hostinger | 8000 | Live system |
+
 ## Implementation Plan: Multi-Environment Development Infrastructure
 
 ### Architecture Overview
