@@ -13,12 +13,10 @@ Instead of a flat dashboard, Phase 3 will adopt a **High-Conjunction Neural Netw
 ## 2. Presence-Driven Morphology (Visual Feedback)
 The UI should reflect the *state* of the agent, not just its existence.
 
-| Agent State | Visual Representation |
-|-------------|-----------------------|
-| **Active** | Brighter glow, slow pulsing outer ring, visible "attention" link to current task. |
+| **Active** | Brighter glow, slow pulsing outer ring (reflecting CPU/Attention), visible "attention" link to current task. |
 | **Idle** | Steady, dimmed glow. |
 | **Sleeping** | Wireframe/Outline only, monochrome (grayscale), particle flow stops. |
-| **Busy/Crunching**| Fast vibrating ring, secondary "thought" particles orbiting the node. |
+| **Busy/Crunching**| Fast vibrating ring ("Breathing" effect), secondary "thought" particles orbiting the node. |
 | **Degraded** | Red flickering border, static-like visual distortion. |
 
 ## 3. Communication Visualization (The Flow)
@@ -31,10 +29,9 @@ Inspired by shiftr.io but enhanced for semantic meaning.
     - *Purple*: Memory being saved (moving towards the central Control Plane hub).
 - **Link Elasticity**: Links between agents that communicate frequently should become thicker and more "tense," pulling the nodes closer together (dynamic link strength).
 
-## 4. Semantic Hubs (Topic Anchors)
-Agents should cluster around **Logical Topics** (e.g., `orchestration`, `vision`, `memory`).
-- High-level topics are depicted as "Gravity Wells" or "Hubs" in the center of the screen.
-- Agents orbit their primary topic, creating natural visual clusters.
+## 4. Semantic Hubs & Regions
+- **Topic Anchors**: High-level topics are depicted as "Gravity Wells" in the center. Agents orbit their primary topic.
+- **Nebula Shading**: If multiple agents are clustered around a semantic concept (e.g., "Physics"), the area between them is faintly shaded (a "Nebula"), visually representing shared focus.
 
 ## 5. Contextual Action HUD (Interactivity)
 Clicking a node shouldn't just show data; it should open a circular **Action HUD** around the node:
