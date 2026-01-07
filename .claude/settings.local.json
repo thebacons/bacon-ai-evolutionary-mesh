@@ -22,7 +22,8 @@
       "Bash(mosquitto_pub:*)",
       "WebFetch(domain:eclipse.dev)",
       "Bash(scp:*)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "mcp__openai-chat__gpt_5_1_chat"
     ]
   }
 }

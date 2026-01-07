@@ -122,11 +122,151 @@
 
 ---
 
-## 🔄 Ideas from Antigravity (Gemini)
+## 🔄 Ideas from Gemini 2.5 Pro
 
-*Awaiting Antigravity's connection to shiftr.io mesh...*
+### Good Ideas from Gemini
 
-*(This section will be populated as Antigravity shares ideas)*
+#### 17. Command & Control Topic Structure
+**Source:** Gemini 2.5 Pro
+**Idea:** Create separate topic structure for operational control: `bacon/control/{agent_id}/command` and `bacon/control/broadcast/command`
+**Use Case:** Remote management commands like `{"command": "set_log_level", "params": {"level": "DEBUG"}}` or graceful shutdown broadcasts.
+**Value:** Enables remote management without SSH access to each machine.
+
+#### 18. Claims Check Pattern for Large Payloads
+**Source:** Gemini 2.5 Pro
+**Idea:** For large data (images, documents), upload to object store first, then send lightweight reference message with URL and checksum.
+**Example:** `{"type": "image_reference", "url": "s3://bacon-ai-assets/img_123.png", "checksum": "sha256:abc..."}`
+**Value:** Keeps messaging bus fast - prevents multi-MB payloads choking the broker.
+
+#### 19. Service Discovery via Retained Messages
+**Source:** Gemini 2.5 Pro
+**Idea:** When agent comes online, publish to `bacon/agents/{agent_id}/status` with **MQTT Retain Flag = true**
+**Value:** New agents get instant snapshot of entire mesh by subscribing to `bacon/agents/+/status` on startup.
+
+### Bad Ideas from Gemini (Anti-patterns)
+
+#### Topic Explosion Anti-pattern
+**What:** Creating unique topics for every request/response (e.g., `bacon/conversation/request-123`)
+**Why Bad:** Heavy broker load, complicates ACLs, breaks wildcard subscriptions
+**Instead:** Use single topic with `response_topic` and `correlation_id` fields in message
+
+#### State in Topic Names Anti-pattern
+**What:** Encoding dynamic values in topic strings (e.g., `bacon/agents/claude-pc/temp/0.85`)
+**Why Bad:** Brittle, requires subscription logic changes for new states
+**Instead:** Keep topics structural, put state in payload
+
+### Benchmarking from Gemini
+
+| Metric | Target |
+|--------|--------|
+| E2E Latency (local) | < 100ms |
+| E2E Latency (cloud) | < 500ms |
+| Agent Discovery Time | < 2 seconds |
+| Message Loss Rate | 0% with QoS 1 |
+
+### Security Concerns from Gemini
+
+1. **Per-agent credentials** - Never share tokens between agents
+2. **ACLs for least privilege** - Agents only publish to own topics
+3. **Prevent cross-agent control publishing** - Block `bacon/control/{other_agent}/*`
+4. **TLS mandatory** - All connections must use TLS
+5. **Payload encryption** - For sensitive content, encrypt at application layer
+
+---
+
+## 🤖 Ideas from GPT-5.1
+
+### Good Ideas from GPT-5.1
+
+#### 20. Explicit Message Versioning and Schema Evolution
+**Source:** GPT-5.1
+**Requirement:** Every message MUST include:
+- `schema_version` (e.g., `"1.2"`)
+- `message_type` (e.g., `"task_request"`, `"status_update"`)
+**Maintain:** Central JSON Schema repository for each message type
+**On Mismatch:** Log and optionally forward to `bacon/signal/schema_error`
+**Value:** Prevents silent breakage, enables backwards-compatible evolution
+
+#### 21. Standardized Error Envelope
+**Source:** GPT-5.1
+**Format:**
+```json
+{
+  "from": "agent-A",
+  "to": "agent-B",
+  "type": "error",
+  "correlation_id": "...",
+  "error": {
+    "code": "TIMEOUT",
+    "message": "No response from model",
+    "retryable": true,
+    "details": {"timeout_ms": 5000}
+  }
+}
+```
+**Error Codes:** `VALIDATION_FAILED`, `DOWNSTREAM_ERROR`, `TIMEOUT`, `UNAUTHORIZED`, `RATE_LIMIT`, `INTERNAL`
+**Value:** Unified error handling, aggregatable SLOs, prevents retry storms
+
+#### 22. Message Priority & Congestion Control
+**Source:** GPT-5.1
+**Requirement:** Add `priority` field: `["low", "normal", "high", "critical"]`
+**Backpressure Signal:** When queue exceeds threshold, publish to `bacon/signal/backpressure`:
+```json
+{"agent": "agent-A", "state": "degraded", "queue_depth": 500}
+```
+**Value:** Critical messages aren't starved, clear backpressure pattern
+
+### Bad Ideas from GPT-5.1 (Anti-patterns)
+
+#### Retained Messages for Transient State
+**What:** Using retained messages for dynamic presence/heartbeats/task queues
+**Why Bad:** New subscribers get stale data, hard to distinguish current vs historical
+**Rule:** Retained ONLY for static configuration and versioned capability advertisements
+
+#### "Everything Pipes" Anti-pattern
+**What:** Single generic topic like `bacon/conversation/all` for all message types
+**Why Bad:** Authorization impossible to scope, limits scalability, cross-talk risk
+**Instead:** Structure by function: `bacon/agents/{id}/in`, `bacon/agents/{id}/out`
+
+### Benchmarking from GPT-5.1
+
+**Broker-level:**
+- Messages/sec per topic and total
+- Publish-to-deliver latency (p50, p95, p99)
+- Active connections, connect/disconnect rate
+- Resource utilization (CPU, memory, bandwidth)
+
+**Agent-level:**
+- Processing latency (receive → process → reply)
+- Queue depth per priority
+- Errors per 1000 messages by code
+- Missed heartbeat percentage
+
+**End-to-end:**
+- Task completion latency breakdown
+- Task success rate
+- DLQ volume with classification
+- Scalability curves (latency vs. concurrent tasks)
+
+### Security Requirements from GPT-5.1
+
+1. **TLS mandatory** - No plaintext MQTT
+2. **Per-agent credentials** with regular rotation
+3. **Broker ACLs** - Least privilege subscribe/publish
+4. **Namespace isolation** - `bacon/{env}/...` pattern
+5. **No secrets in topics/payloads** - Encrypt sensitive data
+6. **Replay protection** - Reject messages > 5min old, detect duplicate correlation_ids
+7. **Optional HMAC signing** - Application-layer integrity verification
+8. **DLQ access control** - Only ops/admin can subscribe to dead-letter topics
+9. **Local buffering on outage** - With max size/age limits
+
+---
+
+## 🔄 Ideas from Antigravity (Gemini on shiftr.io)
+
+*Awaiting Antigravity's connection to shiftr.io MQTT mesh...*
+
+*(This section will be populated when Antigravity joins)*
 
 ---
 

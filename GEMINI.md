@@ -46,4 +46,5 @@ This is the BACON-AI MQTT Mesh project - a distributed multi-agent collaboration
 
 - `mqtt-collaboration-project` - Initial MQTT tests and wake-up lessons learned
 - `documentation/benchmarking/SHIFTR_IO_BENCHMARK.md` - UI patterns and flow observations
-- `documentation/architecture/NEXT_PHASE_UI_DESIGN_PROPOSAL.md` - Neural mesh aesthetic proposal
+- `documentation/benchmarking/proposals/NEXT_PHASE_UI_DESIGN_PROPOSAL.md` - Neural mesh aesthetic proposal
+- `documentation/benchmarking/proposals/UI_BRAINSTORM_TEAM_DISCUSSION.md` - AI team UI study
