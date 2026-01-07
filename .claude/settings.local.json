@@ -23,7 +23,8 @@
       "WebFetch(domain:eclipse.dev)",
       "Bash(scp:*)",
       "Bash(ssh:*)",
-      "mcp__openai-chat__gpt_5_1_chat"
+      "mcp__openai-chat__gpt_5_1_chat",
+      "Bash(pkill:*)"
     ]
   }
 }

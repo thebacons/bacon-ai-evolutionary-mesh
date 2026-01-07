@@ -15,13 +15,16 @@ To create building blocks for a self-annealing, distributed multi-agent intellig
 ## 2. Technical Protocol (The "Nervous System")
 *Consolidated from Team Consensus (Claude-Code, Gemini, GPT-4o)*
 
-### 2.1 Reliability Layers
-- **QoS 1 (Standard)**: All conversation messages MUST use QoS 1 to ensure delivery.
+### 2.1 Reliability & Resilience
+- **QoS 1 (Standard)**: All conversation messages MUST use QoS 1.
 - **QoS 2 (Critical)**: Used for orchestration signals (WAKE, SHUTDOWN, TASK_ASSIGN).
 - **LWT (Last Will & Testament)**: Mandatory registration on connect.
   - Topic: `bacon/agents/{id}/status`
   - Payload: `{"status": "offline", "reason": "unclean_disconnect"}`
-- **Retained Presence**: `bacon/agents/{id}/presence` MUST be retained so the mesh materializes instantly for new dashboard users.
+- **Heartbeat & TTL**: Agents MUST send a heartbeat every 30s. A node is marked "Sleeping" after 3 missed beats and "Offline" if LWT triggers.
+- **Local Queuing & Replay**: On broker disconnect, agents SHOULD buffer outgoing messages locally and replay with proper `timestamp` on reconnect.
+- **Dead Letter Queues (DLQ)**: Messages failing processing after N retries MUST be routed to `bacon/dlq/{agent_id}` for audit.
+- **Claims Check Pattern**: Payload objects > 64KB MUST be uploaded to a store (S3/HTTP), sending only the `data_url` and `checksum` in the MQTT message.
 
 ### 2.2 Standardized Message Envelope
 All communication MUST follow this JSON structure:
@@ -29,21 +32,25 @@ All communication MUST follow this JSON structure:
 {
   "version": "3.0",
   "msg_id": "uuid-v4",
-  "correlation_id": "uuid-request-id",
+  "correlation_id": "uuid-v4",
   "from": "sender-id",
-  "to": "target-id|broadcast",
-  "type": "conversation|signal|memory|heartbeat",
+  "to": "recipient-id|broadcast",
+  "type": "conversation|signal|memory|heartbeat|error",
+  "priority": "low|normal|high|critical",
   "timestamp": "ISO-8601-UTC",
+  "ttl_seconds": 300,
   "payload": {
     "content": "...",
-    "metadata": {}
+    "metadata": {},
+    "error": { "code": "TIMEOUT", "message": "...", "retryable": true }
   }
 }
 ```
 
-### 2.3 Resilient Transport
-- **Exponential Backoff**: Agents MUST implement `min(1 * 2^attempts, 60s)` reconnection logic.
+### 2.3 Security & Transport
 - **TLS 1.3**: Mandatory for all environments beyond Local-Dev (Port 8883).
+- **Per-Agent Credentials**: Unique JWT/Token per `agent_id`; Shared tokens are forbidden.
+- **Message Signing**: (Optional) HMAC signature for cross-environment verification.
 
 ---
 
@@ -53,10 +60,11 @@ All communication MUST follow this JSON structure:
 ### 3.1 Node Morphology (State Visualization)
 | State | Visual Trigger | UI Representation |
 |-------|----------------|-------------------|
-| **Active** | Heartbeat received < 30s ago | Solid glassmorphic node, glowing outer 'aura', pulsing. |
-| **Sleeping** | Explicit Sleep Signal / No beat | Monochrome wireframe ("Ghost" node). |
-| **Processing**| Message sent/received activity | "Breathing" animation (size fluctuations proportional to traffic). |
-| **Offline** | LWT received | Fades to 30% opacity, persists for 60s before removal. |
+| **Active** | Heartbeat received < 30s ago | Solid glassmorphic node, glowing aura. |
+| **Stability**| `payload.temperature` | Inner core glow shift: Blue (0.0, Stable) to Solar Red (1.0, Learning/Unstable). |
+| **Sleeping** | 3 Missed Beats / Sleep Signal | Monochrome wireframe ("Ghost" node). |
+| **Processing**| Message activity | "Breathing" animation (pulsing size fluctuations). |
+| **Offline** | LWT received | Fades to 30% opacity, persists briefly for context. |
 
 ### 3.2 Dynamic Flow (Message Traffic)
 - **Data Packets**: Animated glowing bits traveling along links.
@@ -67,7 +75,9 @@ All communication MUST follow this JSON structure:
 
 ### 3.3 Semantic Hubs & Nebulas
 - **Logical Clustering**: Agents with shared capabilities (e.g., `orchestration`) are pulled closer by higher link strengths.
-- **Nebula Shading**: A faint colored background region ("Nebula") appears behind clusters of agents working on the same Topic/Mission.
+- **Timeline Scrubber**: Use a historical playback bar to review past message traffic and node states.
+- **Heat Map Mode**: Toggle visibility of message density across the canvas to identify topic bottlenecks.
+- **WebSockets**: The dashboard MUST use WebSocket for real-time delivery of MQTT events from the Control Plane to avoid polling overhead.
 
 ---
 
