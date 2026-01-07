@@ -368,18 +368,26 @@ const App: React.FC = () => {
         }
       });
 
-      // 3. LOGICAL BRIDGE (Connect Clusters)
-      // Find the remote host and local host to create a "Bridge Link"
-      const remoteHosts = agents.filter(a => a.node_id.includes('srv906866')).map(a => a.node_id);
-      const localHosts = agents.filter(a => a.node_id.includes('pc-win11')).map(a => a.node_id);
+      // 3. NETWORK BACKBONE (Connect all hardware nodes to form a spine)
+      const remoteCloud = Array.from(nodes.values()).find(n => n.type === 'hardware' && n.id.includes('srv906866'))?.id;
+      const localPC = Array.from(nodes.values()).find(n => n.type === 'hardware' && n.id.includes('pc-win11'))?.id;
 
-      if (remoteHosts.length > 0 && localHosts.length > 0 && showInfrastructure) {
-        links.push({
-          source: remoteHosts[0],
-          target: localHosts[0],
-          type: 'bridge'
-        });
-      }
+      const hardwareNodes = Array.from(nodes.values()).filter(n => n.type === 'hardware');
+
+      hardwareNodes.forEach(hw => {
+        // Essential: Connect Local PC to Remote Cloud (The WAN Bridge)
+        if (hw.id === localPC && remoteCloud) {
+          links.push({ source: hw.id, target: remoteCloud, type: 'bridge' });
+        }
+
+        // Connect other hardware to the local spine if they are likely local
+        if (hw.id !== localPC && hw.id !== remoteCloud) {
+          const targetNode = hw.id.includes('.cloud') || hw.id.includes('srv') ? remoteCloud : localPC;
+          if (targetNode && targetNode !== hw.id) {
+            links.push({ source: hw.id, target: targetNode, type: 'bridge' });
+          }
+        }
+      });
 
       // 4. VIRTUAL SIGNAL LINKS (Communication History)
       if (showSignals) {
@@ -574,7 +582,7 @@ const App: React.FC = () => {
               linkCurvature="curvature"
               linkColor={(link: any) => {
                 if (link.type === 'hardware') return showInfrastructure ? '#00d2ff88' : 'transparent';
-                if (link.type === 'bridge') return showInfrastructure ? '#ff00ff44' : 'transparent';
+                if (link.type === 'bridge') return showInfrastructure ? '#ff00ffaa' : 'transparent'; // Increased opacity for bridge
                 if (link.type === 'dependency') return showInfrastructure ? 'rgba(255, 255, 255, 0.2)' : 'transparent';
                 if (link.type === 'signal') {
                   if (!showSignals) return 'transparent';
