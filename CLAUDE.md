@@ -1,6 +1,16 @@
-# BACON-AI: Evolutionary Mesh
+# BACON-AI: MQTT Mesh
+
+> **OFFICIAL PROJECT NAME**: `bacon-ai-mqtt-mesh`
+> **Do not invent new names!** This was decided on 2026-01-07.
 
 ## Quick Reference
+
+### Project Locations
+| Location | Path |
+|----------|------|
+| **Local (Windows)** | `C:\Users\colin\Claude-Work\Projects\bacon-ai-evolutionary-mesh\` |
+| **Server (PoC)** | `/home/bacon/projects/bacon-ai-mqtt-mesh/` |
+| **Server (Production)** | `/opt/bacon-ai/...` (future) |
 
 ### Development Commands
 ```bash
@@ -39,14 +49,20 @@ Use these slash commands for automated workflows:
 - [Functional Spec](documentation/functional/BACON_FUNCTIONAL_SPEC_V2.md) - Feature requirements
 
 ## Branding & Philosophy
-- **Product**: BACON-AI Evolutionary Mesh
+- **Product**: BACON-AI MQTT Mesh
 - **Philosophy**: Self-Annealing, Distributed Intelligence, Human-In-The-Loop
 - **Coding Style**: Asynchronous (aiomqtt), Type-hinted (SQLModel), Clean Docs
+
+## Key Features
+- **Control Plane**: FastAPI server with MQTT monitoring
+- **Dashboard**: React TypeScript force-graph visualization
+- **Memory Service**: Mem0 Cloud for semantic memory (API key in .env)
+- **Presence Model**: Agent sleeping/active/idle states
 
 ## Project Structure
 ```
 src/
-├── control_plane/    # FastAPI backend, MQTT handler
+├── control_plane/    # FastAPI backend, MQTT handler, Mem0 gateway
 ├── dashboard/        # React TypeScript frontend
 └── agent_daemon/     # Agent listener daemon
 
