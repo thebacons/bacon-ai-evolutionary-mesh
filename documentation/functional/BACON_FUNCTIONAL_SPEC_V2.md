@@ -32,6 +32,8 @@ Accessed via Browser.
 *   **FN-DB-02 (Live Traffic):** Visualize messages as moving particles on links.
 *   **FN-DB-03 (Metrics):** Display global system health (Active Agents, Messages/Min).
 *   **FN-DB-04 (Remote Terminal):** Execute shell commands on remote nodes via the secure MQTT signal path.
+*   **FN-DB-05 (Memory Inspector):** Provide a read-only view of the Mem0 semantic memory records, filtered by agent or user. Include direct links to the [Mem0.ai Dashboard](https://app.mem0.ai) for administrative tasks.
+
 
 ## 3. High-Level Roadmap: Multi-Model Orchestration & Evolution
 *   **Task Routing:** Auto-route "Coding" tasks to Claude, "Reasoning" to GPT-5/Gemini, and "Sensitive" data to local Ollama clusters.

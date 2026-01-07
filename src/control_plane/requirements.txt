@@ -8,3 +8,13 @@ aiomqtt>=2.0.0
 
 # Type hints (usually included, but explicit is good)
 typing-extensions>=4.0.0
+
+# Database and API
+sqlmodel>=0.0.22
+fastapi>=0.109.0
+uvicorn>=0.27.0
+pydantic-settings>=2.1.0
+
+# Memory Gateway
+mem0ai>=0.1.20 # mem0 is often installed as mem0ai
+

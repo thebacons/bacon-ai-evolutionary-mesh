@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__edge-tts__text_to_speech",
+      "mcp__filesystem__list_directory",
+      "Bash(cat:*)",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(source .venv-wsl/bin/activate)",
+      "Bash(uv:*)",
+      "Bash(rm:*)",
+      "Bash(source:*)",
+      "Bash(python test_mqtt.py:*)",
+      "Bash(curl -s http://srv906866.hstgr.cloud:8000/api/agents)",
+      "mcp__gemini-chat__gemini_25_pro_chat",
+      "Bash(curl:*)",
+      "Bash(mkdir:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

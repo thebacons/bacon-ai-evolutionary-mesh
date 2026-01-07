@@ -48,6 +48,9 @@ Confirms to `BACON_SIGNAL_PROTOCOL.md` (v1.2).
 *   `GET /api/agents` - List all seen agents.
 *   `GET /api/history?limit=100` - Get recent messages.
 *   `POST /api/signal` - Inject a signal (Wake/Command).
+*   `GET /api/memory/{agent_id}` - Retrieve semantic memories for a node.
+*   `POST /api/memory/learn` - Manually inject a semantic memory.
+
 
 ### 3.2 WebSocket
 *   `ws://server/ws/feed` - Push updates for Dashboard.
