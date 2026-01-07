@@ -1,8 +1,19 @@
 # Development System Landscape
 
-This document describes the multi-environment development infrastructure for the BACON-AI Evolutionary Mesh.
+Multi-environment development infrastructure for BACON-AI Evolutionary Mesh.
 
-## Architecture Overview
+## Development Approach
+
+**Local Development:**
+- Single codebase at `c:\Users\colin\Claude-Work\Projects\bacon-ai-evolutionary-mesh\`
+- No need for multiple local directories - **git handles version control**
+- Deploy to test environments on Hostinger for validation
+
+**Source of Truth:**
+- **GitHub** is the source of truth for all code
+- Local changes → push to GitHub → deploy to server
+
+## Server Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -16,65 +27,43 @@ This document describes the multi-environment development infrastructure for the
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Directory Structure
+## Server Directory Structure (only on Hostinger)
 
 ```
 /opt/bacon-ai/
-├── production/     # Port 8000 - main branch (LIVE)
-├── integration/    # Port 8005 - merge testing
+├── production/      # Port 8000
+├── integration/     # Port 8005
 ├── feature-physics/ # Port 8006
-└── feature-gui/    # Port 8007
+└── feature-gui/     # Port 8007
 ```
 
-## Systemd Services
+## Deployment Commands
 
-Each environment runs as an independent systemd service using a template:
-
-```
-/etc/systemd/system/bacon-env@.service
-```
-
-Service instances:
-- `bacon-env@8000.service` → Production
-- `bacon-env@8005.service` → Integration
-- `bacon-env@8006.service` → Feature Physics
-- `bacon-env@8007.service` → Feature GUI
-
-## Deployment Workflow
-
-### Deploy to Feature Branch
 ```bash
+# Deploy local code to feature environment
 python deploy_hostinger.py --env feature-physics
-```
 
-### Promote Feature → Integration
-```bash
+# Promote feature → integration
 python deploy_hostinger.py --env integration --from feature-physics
+
+# Promote integration → production
+python deploy_hostinger.py --env production --from integration
 ```
 
-### Promote Integration → Production
+## Rollback Strategy
+
+| Method | Command | Use Case |
+|--------|---------|----------|
+| **From another env** | `--from integration` | Quick rollback from known-good env |
+| **From GitHub** | `git checkout <commit> && redeploy` | Roll back to specific commit |
+
+**Example: Production broke, rollback from integration:**
 ```bash
 python deploy_hostinger.py --env production --from integration
 ```
 
-### Rollback Production
+**Example: Redeploy from GitHub:**
 ```bash
-python deploy_hostinger.py --env production --rollback
+git checkout HEAD~1  # or specific commit hash
+python deploy_hostinger.py --env production
 ```
-
-## Available Environments
-
-| Environment | Port | GitHub Branch | Purpose |
-|-------------|------|---------------|---------|
-| production | 8000 | main | Live system |
-| integration | 8005 | - | Merge testing |
-| feature-physics | 8006 | feature/* | Physics development |
-| feature-gui | 8007 | feature/* | GUI development |
-
-## Regression Testing Workflow
-
-1. Develop and test on feature port (e.g., 8006)
-2. Promote to integration (8005)
-3. Run regression tests on 8005
-4. If successful, promote to production (8000)
-5. If issues found, rollback and fix on feature branch
