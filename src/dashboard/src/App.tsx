@@ -258,7 +258,7 @@ const App: React.FC = () => {
       return custom !== undefined ? -custom : -150;
     });
 
-    // Link Forces
+    // Link Forces - Proportional distances to clearly separate clusters
     graphComponentRef.current.d3Force('link')
       .distance((link: any) => {
         const s = nodeSettings[link.source.id]?.linkDistance;
@@ -266,8 +266,15 @@ const App: React.FC = () => {
         if (s !== undefined || t !== undefined) {
           return (s || 60) + (t || 60);
         }
-        // Increased default distance from 30 to 60 to prevent overlap
-        return link.type === 'hardware' ? 80 : 60;
+
+        // Shorten distance for agents to their host machine to form tight clusters
+        if (link.type === 'hardware') return 40;
+        if (link.type === 'dependency') return 50;
+
+        // Keep backbone nodes (srv to pc) at a comfortable distance
+        if (link.type === 'bridge') return 120;
+
+        return 60;
       })
       .strength((link: any) => {
         const s = nodeSettings[link.source.id]?.linkStrength;
@@ -275,7 +282,8 @@ const App: React.FC = () => {
         if (s !== undefined || t !== undefined) {
           return (s || 1) * (t || 1);
         }
-        return 1;
+        // Stronger links for clustering, weaker for the long-distance bridge
+        return link.type === 'bridge' ? 0.3 : 1;
       });
 
     // Gravitational Attraction to Main Server (srv906866)
@@ -584,7 +592,7 @@ const App: React.FC = () => {
               linkCurvature="curvature"
               linkColor={(link: any) => {
                 if (link.type === 'hardware') return showInfrastructure ? '#00d2ff88' : 'transparent';
-                if (link.type === 'bridge') return showInfrastructure ? '#ff00ffaa' : 'transparent'; // Increased opacity for bridge
+                if (link.type === 'bridge') return showInfrastructure ? '#ff00ff22' : 'transparent'; // Faint bridge links as requested
                 if (link.type === 'dependency') return showInfrastructure ? 'rgba(255, 255, 255, 0.2)' : 'transparent';
                 if (link.type === 'signal') {
                   if (!showSignals) return 'transparent';
