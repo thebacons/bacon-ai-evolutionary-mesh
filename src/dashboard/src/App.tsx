@@ -318,10 +318,10 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!graphComponentRef.current) return;
 
-    // Repulsion (Charge) - Use base -150 consistent with UI fallback
+    // Repulsion (Charge) - renamed to "Push" for intuition
     graphComponentRef.current.d3Force('charge').strength((node: any) => {
       const custom = nodeSettings[node.id]?.repulsion;
-      // UI fallback is 150, so use -150 if not set. Slider 0-500.
+      // Default -150. Slider pushes up to -600.
       return -(custom !== undefined ? custom : 150);
     });
 
@@ -341,10 +341,9 @@ const App: React.FC = () => {
           return (s || 60) + (t || 60);
         }
 
-        // Default logic
         if (link.type === 'hardware') return 40;
         if (link.type === 'dependency') return 50;
-        if (link.type === 'bridge') return 120;
+        if (link.type === 'bridge') return 180;
         return 60;
       })
       .strength((link: any) => {
@@ -985,58 +984,90 @@ const App: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.6, marginBottom: '5px' }}>
-                  <span>Repulsion (Gravity)</span>
-                  <span>{nodeSettings[contextMenu.nodeId]?.repulsion || 150}</span>
+              {/* Enhanced Physics Controls with intuitive names */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+                <div style={{ fontSize: '0.65rem', color: '#00d2ff', marginBottom: '10px', fontWeight: 600 }}>MESH PHYSICS CONTROLS</div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.8, marginBottom: '2px' }}>
+                    <span>Push (Repulsion)</span>
+                    <span>{nodeSettings[contextMenu.nodeId]?.repulsion || 150}</span>
+                  </div>
+                  <div style={{ fontSize: '0.6rem', opacity: 0.4, marginBottom: '5px' }}>Forces other nodes away from this center.</div>
+                  <input
+                    type="range" min="0" max="600" step="10"
+                    value={nodeSettings[contextMenu.nodeId]?.repulsion || 150}
+                    onPointerDown={() => {
+                      const fg = graphComponentRef.current;
+                      if (fg && typeof (fg as any).d3AlphaTarget === 'function') (fg as any).d3AlphaTarget(0.5);
+                    }}
+                    onPointerUp={() => {
+                      const fg = graphComponentRef.current;
+                      if (fg && typeof (fg as any).d3AlphaTarget === 'function') (fg as any).d3AlphaTarget(0);
+                    }}
+                    onChange={(e) => setNodeSettings(prev => ({
+                      ...prev,
+                      [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], repulsion: parseInt(e.target.value) }
+                    }))}
+                    style={{ width: '100%', accentColor: '#00d2ff' }}
+                  />
                 </div>
-                <input
-                  type="range" min="0" max="500" step="10"
-                  value={nodeSettings[contextMenu.nodeId]?.repulsion || 150}
-                  onChange={(e) => setNodeSettings(prev => ({
-                    ...prev,
-                    [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], repulsion: parseInt(e.target.value) }
-                  }))}
-                  style={{ width: '100%', accentColor: '#00d2ff' }}
-                />
+
+                <div style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.8, marginBottom: '2px' }}>
+                    <span>Reach (Distance)</span>
+                    <span>{nodeSettings[contextMenu.nodeId]?.linkDistance || 60}px</span>
+                  </div>
+                  <div style={{ fontSize: '0.6rem', opacity: 0.4, marginBottom: '5px' }}>The target length of its network connections.</div>
+                  <input
+                    type="range" min="10" max="400" step="5"
+                    value={nodeSettings[contextMenu.nodeId]?.linkDistance || 60}
+                    onPointerDown={() => {
+                      const fg = graphComponentRef.current;
+                      if (fg && typeof (fg as any).d3AlphaTarget === 'function') (fg as any).d3AlphaTarget(0.5);
+                    }}
+                    onPointerUp={() => {
+                      const fg = graphComponentRef.current;
+                      if (fg && typeof (fg as any).d3AlphaTarget === 'function') (fg as any).d3AlphaTarget(0);
+                    }}
+                    onChange={(e) => setNodeSettings(prev => ({
+                      ...prev,
+                      [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], linkDistance: parseInt(e.target.value) }
+                    }))}
+                    style={{ width: '100%', accentColor: '#00ff88' }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.8, marginBottom: '2px' }}>
+                    <span>Stiffness (Tension)</span>
+                    <span>{(nodeSettings[contextMenu.nodeId]?.linkStrength || 1).toFixed(2)}x</span>
+                  </div>
+                  <div style={{ fontSize: '0.6rem', opacity: 0.4, marginBottom: '5px' }}>How strictly Reach is enforced vs Push.</div>
+                  <input
+                    type="range" min="0.05" max="3" step="0.05"
+                    value={nodeSettings[contextMenu.nodeId]?.linkStrength || 1}
+                    onPointerDown={() => {
+                      const fg = graphComponentRef.current;
+                      if (fg && typeof (fg as any).d3AlphaTarget === 'function') (fg as any).d3AlphaTarget(0.5);
+                    }}
+                    onPointerUp={() => {
+                      const fg = graphComponentRef.current;
+                      if (fg && typeof (fg as any).d3AlphaTarget === 'function') (fg as any).d3AlphaTarget(0);
+                    }}
+                    onChange={(e) => setNodeSettings(prev => ({
+                      ...prev,
+                      [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], linkStrength: parseFloat(e.target.value) }
+                    }))}
+                    style={{ width: '100%', accentColor: '#ff00ff' }}
+                  />
+                </div>
               </div>
 
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.6, marginBottom: '5px' }}>
-                  <span>Link Distance</span>
-                  <span>{nodeSettings[contextMenu.nodeId]?.linkDistance || 60}px</span>
-                </div>
-                <input
-                  type="range" min="10" max="300" step="5"
-                  value={nodeSettings[contextMenu.nodeId]?.linkDistance || 60}
-                  onChange={(e) => setNodeSettings(prev => ({
-                    ...prev,
-                    [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], linkDistance: parseInt(e.target.value) }
-                  }))}
-                  style={{ width: '100%', accentColor: '#00ff88' }}
-                />
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.6, marginBottom: '5px' }}>
-                  <span>Tension (Strength)</span>
-                  <span>{(nodeSettings[contextMenu.nodeId]?.linkStrength || 1).toFixed(2)}</span>
-                </div>
-                <input
-                  type="range" min="0.1" max="5" step="0.1"
-                  value={nodeSettings[contextMenu.nodeId]?.linkStrength || 1}
-                  onChange={(e) => setNodeSettings(prev => ({
-                    ...prev,
-                    [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], linkStrength: parseFloat(e.target.value) }
-                  }))}
-                  style={{ width: '100%', accentColor: '#ff00ff' }}
-                />
-              </div>
-
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.6, marginBottom: '5px' }}>
-                  <span>Node Size</span>
-                  <span>{nodeSettings[contextMenu.nodeId]?.sizeMultiplier || 1}x</span>
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', opacity: 0.8, marginBottom: '5px' }}>
+                  <span>Node Scale</span>
+                  <span>{(nodeSettings[contextMenu.nodeId]?.sizeMultiplier || 1).toFixed(1)}x</span>
                 </div>
                 <input
                   type="range" min="0.5" max="5" step="0.1"
@@ -1045,9 +1076,33 @@ const App: React.FC = () => {
                     ...prev,
                     [contextMenu.nodeId]: { ...prev[contextMenu.nodeId], sizeMultiplier: parseFloat(e.target.value) }
                   }))}
-                  style={{ width: '100%', accentColor: '#fbbc05' }}
+                  style={{ width: '100%', accentColor: '#ffcc00' }}
                 />
               </div>
+
+              <button
+                onClick={() => setNodeSettings(prev => {
+                  const next = { ...prev };
+                  delete next[contextMenu.nodeId];
+                  return next;
+                })}
+                style={{
+                  marginTop: '10px',
+                  background: 'rgba(255,100,100,0.1)',
+                  border: '1px solid rgba(255,100,100,0.3)',
+                  color: '#ff6666',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,100,100,0.2)'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,100,100,0.1)'}
+              >
+                Reset to Defaults
+              </button>
             </div>
           </div>
         )}
