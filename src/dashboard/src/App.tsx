@@ -218,6 +218,9 @@ const App: React.FC = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, nodeId: string } | null>(null);
   const [showInfrastructure, setShowInfrastructure] = useState(true);
   const [showSignals, setShowSignals] = useState(true);
+  const [globalReheat, setGlobalReheat] = useState(false);
+  const [heatmapMode, setHeatmapMode] = useState(false);
+  const [nodeActivityMap, setNodeActivityMap] = useState<Record<string, number>>({});
 
   // Custom settings store (repulsion, linkDistance, linkStrength, nameOverride)
   const [nodeSettings, setNodeSettings] = useState<Record<string, any>>({});
@@ -313,6 +316,35 @@ const App: React.FC = () => {
     const interval = setInterval(fetchHistory, 4000);
     return () => clearInterval(interval);
   }, []);
+
+  // Global Reheat - continuously keep simulation active
+  useEffect(() => {
+    if (!globalReheat || !graphComponentRef.current) return;
+
+    const reheatInterval = setInterval(() => {
+      const fg = graphComponentRef.current;
+      if (fg && typeof fg.d3Simulation === 'function') {
+        const sim = fg.d3Simulation();
+        if (sim) {
+          sim.alpha(0.1).restart();
+        }
+      }
+    }, 1000);
+
+    return () => clearInterval(reheatInterval);
+  }, [globalReheat]);
+
+  // Calculate node activity for heatmap mode
+  useEffect(() => {
+    if (!heatmapMode) return;
+
+    const activityMap: Record<string, number> = {};
+    messages.forEach(msg => {
+      activityMap[msg.sender] = (activityMap[msg.sender] || 0) + 1;
+      activityMap[msg.target] = (activityMap[msg.target] || 0) + 1;
+    });
+    setNodeActivityMap(activityMap);
+  }, [messages, heatmapMode]);
 
   // Apply custom physics forces to D3 engine
   useEffect(() => {
@@ -623,6 +655,14 @@ const App: React.FC = () => {
                 <input type="checkbox" checked={showSignals} onChange={e => setShowSignals(e.target.checked)} style={{ cursor: 'pointer' }} />
                 <Zap size={14} color="#00ffff" /> SIGNALS
               </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem', color: globalReheat ? '#ff6b6b' : 'inherit' }}>
+                <input type="checkbox" checked={globalReheat} onChange={e => setGlobalReheat(e.target.checked)} style={{ cursor: 'pointer' }} />
+                <Activity size={14} color={globalReheat ? '#ff6b6b' : '#888'} /> REHEAT
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.75rem', color: heatmapMode ? '#ffbb00' : 'inherit' }}>
+                <input type="checkbox" checked={heatmapMode} onChange={e => setHeatmapMode(e.target.checked)} style={{ cursor: 'pointer' }} />
+                <Layers size={14} color={heatmapMode ? '#ffbb00' : '#888'} /> HEATMAP
+              </label>
             </div>
           )}
 
@@ -688,8 +728,21 @@ const App: React.FC = () => {
 
                 // Get Visual Config for Group
                 const config = typeConfigs[node.group] || { shape: 'circle', color: '#00ff88', baseSize: 4 };
-                const color = config.color;
+
+                // Heatmap mode: color based on message activity
+                let color = config.color;
+                if (heatmapMode) {
+                  const activity = nodeActivityMap[node.id] || 0;
+                  const maxActivity = Math.max(1, ...Object.values(nodeActivityMap));
+                  const heat = Math.min(1, activity / maxActivity);
+                  // Gradient from blue (cold) to red (hot)
+                  const r = Math.floor(255 * heat);
+                  const g = Math.floor(100 * (1 - heat));
+                  const b = Math.floor(255 * (1 - heat));
+                  color = `rgb(${r}, ${g}, ${b})`;
+                }
                 const shape = config.shape;
+
 
                 // Effective size: base size * node setting multiplier (default 1)
                 const sizeMult = nodeSettings[node.id]?.sizeMultiplier || 1;
