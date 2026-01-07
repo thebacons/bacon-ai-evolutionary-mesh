@@ -251,10 +251,11 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!graphComponentRef.current) return;
 
-    // Repulsion (Charge)
+    // Repulsion (Charge) - Increased baseline repulsion to prevent overlapping
     graphComponentRef.current.d3Force('charge').strength((node: any) => {
       const custom = nodeSettings[node.id]?.repulsion;
-      return custom !== undefined ? -custom : -30;
+      // Increased base from -30 to -150 for better separation
+      return custom !== undefined ? -custom : -150;
     });
 
     // Link Forces
@@ -263,9 +264,10 @@ const App: React.FC = () => {
         const s = nodeSettings[link.source.id]?.linkDistance;
         const t = nodeSettings[link.target.id]?.linkDistance;
         if (s !== undefined || t !== undefined) {
-          return (s || 30) + (t || 30);
+          return (s || 60) + (t || 60);
         }
-        return 30;
+        // Increased default distance from 30 to 60 to prevent overlap
+        return link.type === 'hardware' ? 80 : 60;
       })
       .strength((link: any) => {
         const s = nodeSettings[link.source.id]?.linkStrength;
@@ -599,38 +601,56 @@ const App: React.FC = () => {
                 // If it's a hardware node and we're hiding infrastructure, don't draw it
                 if (node.type === 'hardware' && !showInfrastructure) return;
 
-                // Increased base font size from 12 to 16
-                const fontSize = 16 / curScale;
-                const size = (node.type === 'hardware' ? 8 : 5); // Slightly larger nodes
+                // Optimized font size for legibility
+                const fontSize = 14 / curScale;
+                const size = (node.type === 'hardware' ? 7 : 4);
 
-                ctx.beginPath();
-                ctx.arc(node.x || 0, node.y || 0, size, 0, 2 * Math.PI, false);
+                ctx.save();
+                ctx.translate(node.x, node.y);
 
+                // Determine shape based on role
+                // Hardware = Hexagon, Claude/Premium AI = Diamond, Agents = Circle
                 if (node.type === 'hardware') {
+                  const sides = 6;
+                  ctx.beginPath();
+                  ctx.moveTo(size * Math.cos(0), size * Math.sin(0));
+                  for (let i = 1; i <= sides; i++) {
+                    ctx.lineTo(size * Math.cos(i * 2 * Math.PI / sides), size * Math.sin(i * 2 * Math.PI / sides));
+                  }
+                  ctx.closePath();
                   ctx.fillStyle = node.id.includes('srv906866') ? '#ff00ff' : '#00d2ff';
                   ctx.shadowBlur = 15;
                   ctx.shadowColor = ctx.fillStyle;
-                } else if (node.operator?.includes('Claude')) {
-                  ctx.fillStyle = '#d97757';
-                } else if (node.id === 'antigravity') {
-                  ctx.fillStyle = '#ff00ff';
+                } else if (node.operator?.includes('Claude') || node.id === 'antigravity') {
+                  // Diamond shape for high-level AI
+                  ctx.beginPath();
+                  ctx.moveTo(0, -size * 1.2);
+                  ctx.lineTo(size * 1.2, 0);
+                  ctx.lineTo(0, size * 1.2);
+                  ctx.lineTo(-size * 1.2, 0);
+                  ctx.closePath();
+                  ctx.fillStyle = node.id === 'antigravity' ? '#ff00ff' : '#d97757';
+                  ctx.shadowBlur = 10;
+                  ctx.shadowColor = ctx.fillStyle;
                 } else {
+                  // Circle for standard agents
+                  ctx.beginPath();
+                  ctx.arc(0, 0, size, 0, 2 * Math.PI, false);
                   ctx.fillStyle = '#00ff88';
                 }
 
                 ctx.fill();
-                ctx.shadowBlur = 0;
+                ctx.restore();
 
-                // Lowered threshold from 1.5 to 0.8 to keep labels visible longer
-                if (curScale > 0.8) {
-                  ctx.font = `bold ${fontSize}px Outfit`;
+                // Draw Text
+                if (curScale > 0.6) {
+                  ctx.font = `600 ${fontSize}px Outfit`;
                   ctx.textAlign = 'center';
                   ctx.textBaseline = 'middle';
                   ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-                  // Add subtle shadow to text for readability
-                  ctx.shadowBlur = 4;
-                  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                  ctx.fillText(label, node.x || 0, (node.y || 0) + (size + 6));
+                  ctx.shadowBlur = 3;
+                  ctx.shadowColor = 'black';
+                  ctx.fillText(label, node.x, node.y + (size + 8));
                   ctx.shadowBlur = 0;
                 }
               }}
