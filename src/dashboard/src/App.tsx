@@ -513,76 +513,104 @@ const App: React.FC = () => {
       {/* Main View */}
       <main style={{ flex: 1, position: 'relative', overflow: 'hidden', background: '#050508' }}>
         {activeTab === 'mesh' && (
-          <ForceGraph2D
-            ref={graphComponentRef}
-            graphData={graphData}
-            onEngineStop={() => {
-              if (graphComponentRef.current && loading) {
-                graphComponentRef.current.zoomToFit(400);
-              }
-            }}
-            cooldownTicks={100}
-            nodeLabel={(node: any) => `${node.id} (${node.role || node.type})`}
-            linkDirectionalParticles={(link: any) => {
-              if (link.type === 'dependency') return 1;
-              if (link.type === 'signal') return 4;
-              return 0;
-            }}
-            linkDirectionalParticleSpeed={(link: any) => link.type === 'signal' ? 0.01 : 0.003}
-            linkCurvature="curvature"
-            linkColor={(link: any) => {
-              if (link.type === 'hardware') return '#00d2ff88';
-              if (link.type === 'bridge') return '#ff00ff44';
-              if (link.type === 'signal') {
-                const op = Math.floor((link.opacity || 1) * 255).toString(16).padStart(2, '0');
-                return `#00ffff${op}`;
-              }
-              return 'rgba(255, 255, 255, 0.2)';
-            }}
-            linkWidth={(link: any) => link.type === 'hardware' ? 2 : 1}
-            nodeCanvasObject={(node: any, ctx, globalScale) => {
-              const label = node.name || node.id;
-              const curScale = globalScale || 1;
-              const fontSize = 12 / curScale;
-              const size = (node.type === 'hardware' ? 6 : 4);
+          <>
+            <ForceGraph2D
+              ref={graphComponentRef}
+              graphData={graphData}
+              onEngineStop={() => {
+                if (graphComponentRef.current && loading) {
+                  graphComponentRef.current.zoomToFit(400);
+                }
+              }}
+              cooldownTicks={100}
+              nodeLabel={(node: any) => `${node.id} (${node.role || node.type})`}
+              linkDirectionalParticles={(link: any) => {
+                if (link.type === 'dependency') return 1;
+                if (link.type === 'signal') return 4;
+                return 0;
+              }}
+              linkDirectionalParticleSpeed={(link: any) => link.type === 'signal' ? 0.01 : 0.003}
+              linkCurvature="curvature"
+              linkColor={(link: any) => {
+                if (link.type === 'hardware') return '#00d2ff88';
+                if (link.type === 'bridge') return '#ff00ff44';
+                if (link.type === 'signal') {
+                  const op = Math.floor((link.opacity || 1) * 255).toString(16).padStart(2, '0');
+                  return `#00ffff${op}`;
+                }
+                return 'rgba(255, 255, 255, 0.2)';
+              }}
+              linkWidth={(link: any) => link.type === 'hardware' ? 2 : 1}
+              nodeCanvasObject={(node: any, ctx, globalScale) => {
+                const label = node.name || node.id;
+                const curScale = globalScale || 1;
+                const fontSize = 12 / curScale;
+                const size = (node.type === 'hardware' ? 6 : 4);
 
-              ctx.beginPath();
-              ctx.arc(node.x || 0, node.y || 0, size, 0, 2 * Math.PI, false);
+                ctx.beginPath();
+                ctx.arc(node.x || 0, node.y || 0, size, 0, 2 * Math.PI, false);
 
-              if (node.type === 'hardware') {
-                ctx.fillStyle = node.id.includes('srv906866') ? '#ff00ff' : '#00d2ff';
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = ctx.fillStyle;
-              } else if (node.id === 'antigravity') {
-                ctx.fillStyle = '#ff00ff';
-              } else {
-                ctx.fillStyle = '#00ff88';
-              }
+                if (node.type === 'hardware') {
+                  ctx.fillStyle = node.id.includes('srv906866') ? '#ff00ff' : '#00d2ff';
+                  ctx.shadowBlur = 10;
+                  ctx.shadowColor = ctx.fillStyle;
+                } else if (node.id === 'antigravity') {
+                  ctx.fillStyle = '#ff00ff';
+                } else {
+                  ctx.fillStyle = '#00ff88';
+                }
 
-              ctx.fill();
-              ctx.shadowBlur = 0;
+                ctx.fill();
+                ctx.shadowBlur = 0;
 
-              if (curScale > 1.5) {
-                ctx.font = `${fontSize}px Outfit`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.fillText(label, node.x || 0, (node.y || 0) + (size + 4));
-              }
-            }}
-            onNodeClick={(node: any) => {
-              const agentFound = agents.find(a => a.id === node.id);
-              setSelectedAgent(agentFound as any || node);
-              setContextMenu(null);
-            }}
-            onNodeRightClick={(node: any, event) => {
-              setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
-            }}
-            onBackgroundClick={() => {
-              setContextMenu(null);
-            }}
-          />
+                if (curScale > 1.5) {
+                  ctx.font = `${fontSize}px Outfit`;
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                  ctx.fillText(label, node.x || 0, (node.y || 0) + (size + 4));
+                }
+              }}
+              onNodeClick={(node: any) => {
+                const agentFound = agents.find(a => a.id === node.id);
+                setSelectedAgent(agentFound as any || node);
+                setContextMenu(null);
+              }}
+              onNodeRightClick={(node: any, event) => {
+                setContextMenu({ x: event.clientX, y: event.clientY, nodeId: node.id });
+              }}
+              onBackgroundClick={() => {
+                setContextMenu(null);
+              }}
+            />
+
+            {/* Floating Zoom Button */}
+            <button
+              onClick={handleZoomToFit}
+              className="glass-panel"
+              style={{
+                position: 'absolute',
+                bottom: '20px',
+                left: '20px',
+                padding: '10px 15px',
+                background: 'rgba(0, 210, 255, 0.15)',
+                border: '1px solid rgba(0, 210, 255, 0.4)',
+                color: '#00d2ff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: 'bold',
+                fontSize: '0.8rem',
+                borderRadius: '4px',
+                zIndex: 5
+              }}
+            >
+              <Maximize size={16} /> ZOOM TO FIT
+            </button>
+          </>
         )}
+
 
         {activeTab === 'intel' && <IntelView agents={agents} />}
         {activeTab === 'channels' && <ChannelsView messages={messages} />}
