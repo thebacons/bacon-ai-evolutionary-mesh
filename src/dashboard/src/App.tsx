@@ -240,13 +240,22 @@ const App: React.FC = () => {
         return 1;
       });
 
+    // Gravitational Attraction to Main Server (srv906866)
+    // This stops other servers from floating off screen by pulling everything toward the primary hub.
+    const mainServerId = 'srv906866.hstgr.cloud';
+
+    // Custom force: X-alignment pulling toward center (0,0) or center of mesh
+    graphComponentRef.current.d3Force('x', (window as any).d3.forceX(0).strength((node: any) => {
+      // Pull machines slightly more than agents to keep the spine stable
+      return node.type === 'hardware' ? 0.05 : 0.02;
+    }));
+
+    graphComponentRef.current.d3Force('y', (window as any).d3.forceY(0).strength((node: any) => {
+      return node.type === 'hardware' ? 0.05 : 0.02;
+    }));
+
     // Reheat engine to apply changes
     graphComponentRef.current.d3ReheatSimulation();
-
-    // Add explicit center force if not present
-    if (!graphComponentRef.current.d3Force('center')) {
-      graphComponentRef.current.d3Force('center', (window as any).d3.forceCenter());
-    }
   }, [nodeSettings]);
 
   // Persistent state for graph to prevent jumping
