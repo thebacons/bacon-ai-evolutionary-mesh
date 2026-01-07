@@ -64,9 +64,37 @@ def deploy(env_name: str, from_env: str = None, rollback: bool = False):
         source_dir = ENV_CONFIG[from_env]["dir"]
         print(f"📋 Promoting from {from_env} to {env_name}...")
         run_remote(f"rsync -av --delete {source_dir}/ {target_dir}/")
+        
+        # Ensure service exists for target environment
+        service_content = f"""[Unit]
+Description=BACON-AI Control Plane ({env_name})
+After=network.target mosquitto.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory={target_dir}
+ExecStart={target_dir}/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port {port}
+Restart=always
+RestartSec=5
+Environment="BACON_ENV={env_name}"
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
+"""
+        local_service_path = LOCAL_SRC_DIR / f"bacon-{env_name}.service"
+        with open(local_service_path, 'w') as f:
+            f.write(service_content)
+        run_local(f"scp -o StrictHostKeyChecking=no {local_service_path} {REMOTE_USER}@{REMOTE_HOST}:/etc/systemd/system/{service_name}")
+        run_remote("systemctl daemon-reload")
+        run_remote(f"systemctl enable {service_name}")
         run_remote(f"systemctl restart {service_name}")
+        run_remote(f"systemctl status {service_name} --no-pager | head -n 8")
         print(f"✅ Promoted {from_env} → {env_name}")
+        print(f"🔗 {env_name.upper()}: http://{REMOTE_HOST}:{port}/")
         return
+
     
     # Standard deployment from local
     # 1. Clean local cache

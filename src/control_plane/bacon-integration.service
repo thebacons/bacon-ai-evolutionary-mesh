@@ -1,0 +1,16 @@
+[Unit]
+Description=BACON-AI Control Plane (integration)
+After=network.target mosquitto.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/bacon-ai/integration
+ExecStart=/opt/bacon-ai/integration/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8005
+Restart=always
+RestartSec=5
+Environment="BACON_ENV=integration"
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target
