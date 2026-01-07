@@ -7,6 +7,18 @@ import {
   Database, BookOpen, Terminal, Network, Search
 } from 'lucide-react';
 
+// Robust polyfill for crypto.randomUUID in non-secure (HTTP) contexts
+if (typeof window !== 'undefined' && (!window.crypto || !window.crypto.randomUUID)) {
+  if (!window.crypto) (window as any).crypto = {};
+  (window.crypto as any).randomUUID = function () {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+}
+
 interface Agent {
   id: string;
   node_id: string;
@@ -352,10 +364,23 @@ const App: React.FC = () => {
     }));
 
     // Soft reheat for smoother transition instead of hectic jumping
-    graphComponentRef.current.d3AlphaTarget(0.3);
-    setTimeout(() => {
-      if (graphComponentRef.current) graphComponentRef.current.d3AlphaTarget(0);
-    }, 500);
+    const fg = graphComponentRef.current;
+    if (fg) {
+      if (typeof fg.d3AlphaTarget === 'function') {
+        fg.d3AlphaTarget(0.3);
+        setTimeout(() => {
+          if (graphComponentRef.current && typeof graphComponentRef.current.d3AlphaTarget === 'function') {
+            graphComponentRef.current.d3AlphaTarget(0);
+          }
+        }, 500);
+      } else if (typeof fg.d3Simulation === 'function') {
+        const sim = fg.d3Simulation();
+        if (sim && sim.alphaTarget) {
+          sim.alphaTarget(0.3).restart();
+          setTimeout(() => sim.alphaTarget(0), 500);
+        }
+      }
+    }
   }, [nodeSettings]);
 
   // Persistent state for graph to prevent jumping
