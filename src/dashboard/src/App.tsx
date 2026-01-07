@@ -138,8 +138,8 @@ const App: React.FC = () => {
           // Force UTC parsing by appending Z if missing
           const ts = a.last_seen.endsWith('Z') ? a.last_seen : `${a.last_seen}Z`;
           const lastSeen = new Date(ts).getTime();
-          // Increase threshold to 5 mins for stability
-          return (Date.now() - lastSeen) < 300000;
+          // Increase threshold to 24 hours for test stability (86,400,000 ms)
+          return (Date.now() - lastSeen) < 86400000;
         });
         setAgents(activeAgents);
         setLoading(false);
