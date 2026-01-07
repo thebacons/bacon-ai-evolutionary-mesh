@@ -416,14 +416,8 @@ const App: React.FC = () => {
         communicationMap.forEach(link => links.push(link));
       }
 
-      // Filter Infrastructure links if layer is hidden
-      let finalHierarchyLinks = links;
-      if (!showInfrastructure) {
-        finalHierarchyLinks = links.filter(l => l.type === 'signal');
-      }
-
       const nextNodes = Array.from(nodes.values());
-      const finalLinksOrdered = finalHierarchyLinks.filter(l =>
+      const finalLinksOrdered = links.filter(l =>
         nodes.has(typeof l.source === 'string' ? l.source : l.source.id) &&
         nodes.has(typeof l.target === 'string' ? l.target : l.target.id)
       );
@@ -572,25 +566,31 @@ const App: React.FC = () => {
               cooldownTicks={100}
               nodeLabel={(node: any) => `${node.id} (${node.role || node.type})`}
               linkDirectionalParticles={(link: any) => {
-                if (link.type === 'dependency') return 1;
-                if (link.type === 'signal') return 4;
+                if (link.type === 'dependency' && showInfrastructure) return 1;
+                if (link.type === 'signal' && showSignals) return 4;
                 return 0;
               }}
               linkDirectionalParticleSpeed={(link: any) => link.type === 'signal' ? 0.01 : 0.003}
               linkCurvature="curvature"
               linkColor={(link: any) => {
-                if (link.type === 'hardware') return '#00d2ff88';
-                if (link.type === 'bridge') return '#ff00ff44';
+                if (link.type === 'hardware') return showInfrastructure ? '#00d2ff88' : 'transparent';
+                if (link.type === 'bridge') return showInfrastructure ? '#ff00ff44' : 'transparent';
+                if (link.type === 'dependency') return showInfrastructure ? 'rgba(255, 255, 255, 0.2)' : 'transparent';
                 if (link.type === 'signal') {
+                  if (!showSignals) return 'transparent';
                   const op = Math.floor((link.opacity || 1) * 255).toString(16).padStart(2, '0');
                   return `#00ffff${op}`;
                 }
-                return 'rgba(255, 255, 255, 0.2)';
+                return 'transparent';
               }}
               linkWidth={(link: any) => link.type === 'hardware' ? 2 : 1}
               nodeCanvasObject={(node: any, ctx, globalScale) => {
                 const label = node.name || node.id;
                 const curScale = globalScale || 1;
+
+                // If it's a hardware node and we're hiding infrastructure, don't draw it
+                if (node.type === 'hardware' && !showInfrastructure) return;
+
                 // Increased base font size from 12 to 16
                 const fontSize = 16 / curScale;
                 const size = (node.type === 'hardware' ? 8 : 5); // Slightly larger nodes
