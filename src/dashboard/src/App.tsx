@@ -28,6 +28,57 @@ interface MessageHistory {
 
 const BACON_API = '/api/agents';
 
+// Helper Component for Legend
+const LegendItem = ({ color, label, isLink }: { color: string, label: string, isLink?: boolean }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.75rem' }}>
+    <div style={{
+      width: isLink ? '20px' : '10px',
+      height: isLink ? '2px' : '10px',
+      background: color,
+      borderRadius: isLink ? '0' : '50%',
+      boxShadow: `0 0 8px ${color}`
+    }} />
+    <span style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 600, letterSpacing: '0.5px' }}>{label}</span>
+  </div>
+);
+
+// Network Legend Panel
+const Legend = () => (
+  <div className="glass-panel" style={{
+    position: 'absolute',
+    top: '20px',
+    left: '20px',
+    padding: '20px',
+    background: 'rgba(0,0,0,0.6)',
+    backdropFilter: 'blur(10px)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '12px',
+    pointerEvents: 'none',
+    zIndex: 10,
+    width: '240px'
+  }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      fontSize: '0.7rem',
+      color: '#00d2ff',
+      fontWeight: 'bold',
+      letterSpacing: '2px',
+      marginBottom: '15px'
+    }}>
+      <Network size={14} /> NETWORK LEGEND
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <LegendItem color="#ff00ff" label="Hostinger Hub / Antigravity" />
+      <LegendItem color="#00d2ff" label="Infrastructure Node" />
+      <LegendItem color="#d97757" label="Claude AI Agent" />
+      <LegendItem color="#00ff88" label="Standard Agent" />
+      <LegendItem color="#00ffff" label="Evolutionary Signal" isLink />
+    </div>
+  </div>
+);
+
 // Placeholder components for new tabs
 const IntelView: React.FC<{ agents: Agent[] }> = ({ agents }) => (
   <div style={{ padding: '20px', color: '#fff', fontFamily: 'Outfit', display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -45,10 +96,6 @@ const IntelView: React.FC<{ agents: Agent[] }> = ({ agents }) => (
           </li>
         ))}
       </ul>
-    </div>
-    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-      <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: '#ff00ff' }}>Recent Activities</h3>
-      <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>No recent activities to display.</p>
     </div>
   </div>
 );
@@ -74,14 +121,6 @@ const ChannelsView: React.FC<{ messages: MessageHistory[] }> = ({ messages }) =>
         ))}
       </ul>
     </div>
-    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-      <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: '#ff00ff' }}>Send Command</h3>
-      <div style={{ display: 'flex', gap: '10px' }}>
-        <input type="text" placeholder="Target Agent ID" style={{ flex: 1, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '8px', borderRadius: '4px', color: '#fff' }} />
-        <input type="text" placeholder="Command" style={{ flex: 2, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '8px', borderRadius: '4px', color: '#fff' }} />
-        <button style={{ background: '#00d2ff', border: 'none', padding: '8px 15px', borderRadius: '4px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><Send size={16} /> Send</button>
-      </div>
-    </div>
   </div>
 );
 
@@ -91,17 +130,12 @@ const KnowledgeView: React.FC<{ memories: any[], selectedAgent: Agent | null }> 
     <p style={{ opacity: 0.7 }}>Access agent memories and learned information for {selectedAgent?.operator || selectedAgent?.id || 'System'}.</p>
     <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
       <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', color: '#ff00ff' }}>Memories ({memories.length})</h3>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-        <input type="text" placeholder="Search memories..." style={{ flex: 1, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: '8px', borderRadius: '4px', color: '#fff' }} />
-        <button style={{ background: '#00d2ff', border: 'none', padding: '8px 15px', borderRadius: '4px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}><Search size={16} /> Search</button>
-      </div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
         {memories.length > 0 ? (
           memories.map((memory, index) => (
             <li key={index} style={{ marginBottom: '8px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ fontWeight: 'bold', color: '#00ff88' }}>{memory.type || 'Fact'}</div>
               <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>{memory.content || memory.text}</div>
-              <div style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: '4px' }}>Score: {memory.score?.toFixed(2) || 'N/A'}</div>
             </li>
           ))
         ) : (
@@ -121,6 +155,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'mesh' | 'intel' | 'channels' | 'knowledge'>('mesh');
   const [memories, setMemories] = useState<any[]>([]);
   const graphComponentRef = useRef<any>(null);
+  const firstZoomDone = useRef(false);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, nodeId: string } | null>(null);
   const [showInfrastructure, setShowInfrastructure] = useState(true);
   const [showSignals, setShowSignals] = useState(true);
@@ -184,7 +219,7 @@ const App: React.FC = () => {
           return (Date.now() - lastSeen) < 86400000;
         });
         setAgents(activeAgents);
-        setLoading(false);
+        // Do not set loading false here, wait for first zoom in onEngineStop
       } catch (error) {
         console.error('Failed to fetch agents:', error);
       }
@@ -528,8 +563,10 @@ const App: React.FC = () => {
               ref={graphComponentRef}
               graphData={graphData}
               onEngineStop={() => {
-                if (graphComponentRef.current && loading) {
-                  graphComponentRef.current.zoomToFit(400);
+                if (graphComponentRef.current && !firstZoomDone.current && graphData.nodes.length > 0) {
+                  graphComponentRef.current.zoomToFit(800, 100);
+                  firstZoomDone.current = true;
+                  setLoading(false);
                 }
               }}
               cooldownTicks={100}
@@ -554,16 +591,19 @@ const App: React.FC = () => {
               nodeCanvasObject={(node: any, ctx, globalScale) => {
                 const label = node.name || node.id;
                 const curScale = globalScale || 1;
-                const fontSize = 12 / curScale;
-                const size = (node.type === 'hardware' ? 6 : 4);
+                // Increased base font size from 12 to 16
+                const fontSize = 16 / curScale;
+                const size = (node.type === 'hardware' ? 8 : 5); // Slightly larger nodes
 
                 ctx.beginPath();
                 ctx.arc(node.x || 0, node.y || 0, size, 0, 2 * Math.PI, false);
 
                 if (node.type === 'hardware') {
                   ctx.fillStyle = node.id.includes('srv906866') ? '#ff00ff' : '#00d2ff';
-                  ctx.shadowBlur = 10;
+                  ctx.shadowBlur = 15;
                   ctx.shadowColor = ctx.fillStyle;
+                } else if (node.operator?.includes('Claude')) {
+                  ctx.fillStyle = '#d97757';
                 } else if (node.id === 'antigravity') {
                   ctx.fillStyle = '#ff00ff';
                 } else {
@@ -573,12 +613,17 @@ const App: React.FC = () => {
                 ctx.fill();
                 ctx.shadowBlur = 0;
 
-                if (curScale > 1.5) {
-                  ctx.font = `${fontSize}px Outfit`;
+                // Lowered threshold from 1.5 to 0.8 to keep labels visible longer
+                if (curScale > 0.8) {
+                  ctx.font = `bold ${fontSize}px Outfit`;
                   ctx.textAlign = 'center';
                   ctx.textBaseline = 'middle';
-                  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                  ctx.fillText(label, node.x || 0, (node.y || 0) + (size + 4));
+                  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                  // Add subtle shadow to text for readability
+                  ctx.shadowBlur = 4;
+                  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                  ctx.fillText(label, node.x || 0, (node.y || 0) + (size + 6));
+                  ctx.shadowBlur = 0;
                 }
               }}
               onNodeClick={(node: any) => {
@@ -601,7 +646,7 @@ const App: React.FC = () => {
               style={{
                 position: 'absolute',
                 bottom: '20px',
-                left: '20px',
+                right: '250px', // Move to the right side to avoid overlapping with stats/legend
                 padding: '10px 15px',
                 background: 'rgba(0, 210, 255, 0.15)',
                 border: '1px solid rgba(0, 210, 255, 0.4)',
@@ -618,6 +663,41 @@ const App: React.FC = () => {
             >
               <Maximize size={16} /> ZOOM TO FIT
             </button>
+
+            <Legend />
+
+            {/* Network Stats - Bottom Left */}
+            <div className="glass-panel" style={{
+              position: 'absolute',
+              bottom: '20px',
+              left: '20px',
+              padding: '15px 20px',
+              background: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '12px',
+              pointerEvents: 'none',
+              zIndex: 10,
+              width: '200px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.7rem', color: '#ff00ff', fontWeight: 'bold', letterSpacing: '2px', marginBottom: '10px' }}>
+                <Activity size={14} /> NETWORK STATS
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ opacity: 0.6 }}>Nodes:</span>
+                  <span style={{ color: '#00ff88', fontWeight: 'bold' }}>{agents.length}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ opacity: 0.6 }}>Signals/sec:</span>
+                  <span style={{ color: '#00d2ff', fontWeight: 'bold' }}>{(messages.length / 4).toFixed(1)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ opacity: 0.6 }}>Active Links:</span>
+                  <span style={{ color: '#ff00ff', fontWeight: 'bold' }}>{graphData.links.length}</span>
+                </div>
+              </div>
+            </div>
           </>
         )}
 
