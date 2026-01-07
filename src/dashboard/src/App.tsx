@@ -335,10 +335,8 @@ const App: React.FC = () => {
         const t = nodeSettings[tId]?.linkDistance;
 
         if (s !== undefined || t !== undefined) {
-          // If both have custom distances, average them or sum? 
-          // Summing (s+t) is better for "node radius" feel. 
-          // Baseline in UI is 60.
-          return (s || 60) + (t || 60);
+          // Use max for "the bigger one wins" predictability
+          return Math.max(s || 60, t || 60);
         }
 
         if (link.type === 'hardware') return 40;
